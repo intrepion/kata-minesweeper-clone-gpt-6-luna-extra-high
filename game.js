@@ -13,6 +13,7 @@
   const boardWrap = document.querySelector("#board-wrap");
   const mineCounter = document.querySelector("#mine-counter");
   const timerOutput = document.querySelector("#timer");
+  const highScoreOutput = document.querySelector("#high-score");
   const message = document.querySelector("#game-message");
   const difficultySelect = document.querySelector("#difficulty-select");
   const bestLabel = document.querySelector("#best-label");
@@ -27,6 +28,8 @@
   const customCols = document.querySelector("#custom-cols");
   const customMines = document.querySelector("#custom-mines");
   const fieldError = document.querySelector("#field-error");
+  const RECORDS_KEY = "field-notes-minesweeper-records";
+  const recordCache = {};
 
   const state = {
     rows: PRESETS.beginner.rows,
@@ -134,27 +137,39 @@
   function loadBest() {
     const label = state.mode === "custom" ? "custom" : state.mode;
     bestLabel.textContent = label;
+    const record = readRecords()[storageKey()];
+    const hasRecord = Number.isInteger(record);
+    bestTime.textContent = hasRecord ? `${formatTime(record)} sec` : "— — —";
+    highScoreOutput.textContent = hasRecord ? formatTime(record) : "---";
+    highScoreOutput.setAttribute("aria-label", hasRecord ? `High score: ${record} seconds for ${label}` : `No high score yet for ${label}`);
+  }
+
+  function readRecords() {
     try {
-      const records = JSON.parse(localStorage.getItem("field-notes-minesweeper-records") || "{}");
-      const record = records[storageKey()];
-      bestTime.textContent = Number.isInteger(record) ? `${formatTime(record)} sec` : "— — —";
+      const stored = JSON.parse(localStorage.getItem(RECORDS_KEY) || "{}");
+      if (stored && typeof stored === "object" && !Array.isArray(stored)) Object.assign(recordCache, stored);
     } catch {
-      bestTime.textContent = "— — —";
+      // Keep this page's records usable when storage is blocked by the browser.
     }
+    return recordCache;
   }
 
   function saveBest() {
+    const key = storageKey();
+    const records = readRecords();
+    const previous = records[key];
+    if (Number.isInteger(previous) && previous <= state.elapsed) {
+      loadBest();
+      return false;
+    }
+    records[key] = state.elapsed;
     try {
-      const key = storageKey();
-      const records = JSON.parse(localStorage.getItem("field-notes-minesweeper-records") || "{}");
-      if (!Number.isInteger(records[key]) || state.elapsed < records[key]) {
-        records[key] = state.elapsed;
-        localStorage.setItem("field-notes-minesweeper-records", JSON.stringify(records));
-      }
+      localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
     } catch {
-      // A private or restricted browsing session can disable local storage.
+      // The in-memory record remains visible for the current page session.
     }
     loadBest();
+    return true;
   }
 
   function cellLabel(cell, index) {
@@ -222,6 +237,7 @@
     if (state.startedAt !== null) return;
     state.startedAt = Date.now();
     state.timerId = window.setInterval(() => {
+      if (state.status !== "playing" || state.startedAt === null) return;
       state.elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
       updateCounters();
     }, 200);
@@ -278,8 +294,10 @@
       for (const cell of state.cells) if (cell.mine) cell.flagged = true;
       state.status = "won";
       setFace("win");
-      message.textContent = `Field cleared in ${formatTime(state.elapsed)} seconds. Nicely done.`;
-      saveBest();
+      const isNewRecord = saveBest();
+      message.textContent = isNewRecord
+        ? `New high score! Field cleared in ${formatTime(state.elapsed)} seconds.`
+        : `Field cleared in ${formatTime(state.elapsed)} seconds. Nicely done.`;
     } else {
       for (const cell of state.cells) if (cell.mine) cell.revealed = true;
       if (explodedIndex !== null) state.cells[explodedIndex].exploded = true;
