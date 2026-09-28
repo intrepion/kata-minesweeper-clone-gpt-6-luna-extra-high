@@ -60,6 +60,7 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .counter-block-record { align-items: flex-end; }
 .counter-label { color: #96a096; font: 500 8px var(--mono); letter-spacing: .14em; }
 .digital-counter { min-width: 62px; padding: 4px 6px 2px; border-radius: 4px; background: #26322c; color: #c9ef80; text-align: center; font: 21px/1.2 var(--mono); letter-spacing: .075em; font-variant-numeric: tabular-nums; box-shadow: inset 0 1px 2px #152019; }
+#timer { min-width: 68px; }
 .record-counter { min-width: 66px; color: #f0dd8b; font-size: 17px; letter-spacing: .03em; }
 .face-button { width: 43px; height: 43px; display: grid; place-items: center; padding: 2px; border: 1px solid #e5e9df; border-radius: 50%; background: #fbfcf7; cursor: pointer; transition: transform .16s, background .16s; }
 .face-button:hover { background: #f2f6e8; transform: rotate(-8deg); }
@@ -141,6 +142,7 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
   .new-game-button { gap: 5px; padding: 0 7px; font-size: 10px; }.new-game-button kbd { display: none; }
   .game-console { height: 75px; }
   .counter-block { min-width: 57px; }.digital-counter { min-width: 49px; padding-right: 3px; padding-left: 3px; font-size: 17px; }
+  #timer { min-width: 54px; }
   .record-counter { min-width: 53px; font-size: 15px; }.counter-label { font-size: 7px; }
   .board-wrap { padding: 7px; }
   .board { --cell-size: 31px; }

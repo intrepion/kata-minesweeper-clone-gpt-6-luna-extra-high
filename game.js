@@ -6,6 +6,7 @@
     intermediate: { rows: 16, cols: 16, mines: 40, label: "intermediate" },
     expert: { rows: 16, cols: 30, mines: 99, label: "expert" },
   };
+  const MAX_TIME_SECONDS = 9999;
   const FLAG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="3" r="1.7" fill="currentColor"/></svg>';
   const PROBABILITY_MARKS = { chance: "½", third: "⅓", quarter: "¼" };
   const MINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2v3m0 13.6v3M2.2 12h3m13.6 0h3M5.08 5.08l2.12 2.12m9.6 9.6 2.12 2.12m0-13.84L16.8 7.2m-9.6 9.6-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="5.1" fill="currentColor"/><circle cx="10.3" cy="10.3" r="1.2" fill="#fffefa"/></svg>';
@@ -125,8 +126,8 @@
   }
 
   function formatTime(seconds) {
-    const safeSeconds = Math.min(Math.max(0, seconds), 999);
-    return String(safeSeconds).padStart(3, "0");
+    const safeSeconds = Math.min(Math.max(0, seconds), MAX_TIME_SECONDS);
+    return String(safeSeconds).padStart(4, "0");
   }
 
   function remainingMineTwelfths() {
@@ -266,7 +267,11 @@
     state.startedAt = Date.now();
     state.timerId = window.setInterval(() => {
       if (state.status !== "playing" || state.startedAt === null) return;
-      state.elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
+      state.elapsed = Math.min(Math.floor((Date.now() - state.startedAt) / 1000), MAX_TIME_SECONDS);
+      if (state.elapsed === MAX_TIME_SECONDS) {
+        stopTimer();
+        return;
+      }
       updateCounters();
     }, 200);
   }
@@ -274,7 +279,7 @@
   function stopTimer() {
     if (state.timerId !== null) window.clearInterval(state.timerId);
     state.timerId = null;
-    if (state.startedAt !== null) state.elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
+    if (state.startedAt !== null) state.elapsed = Math.min(Math.floor((Date.now() - state.startedAt) / 1000), MAX_TIME_SECONDS);
     state.startedAt = null;
     updateCounters();
   }
