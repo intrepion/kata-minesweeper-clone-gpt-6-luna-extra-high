@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f1f3ed" />
+    <meta name="description" content="A little classic Minesweeper. Clear the field, mark the mines, and trust your numbers." />
+    <title>Minesweeper — Field Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="game.js" defer></script>
+  </head>
+  <body>
+    <div class="page-grain" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="wordmark" href="./" aria-label="Field Notes home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><path d="M16 2.8v4M16 25.2v4M2.8 16h4m18.4 0h4M6.67 6.67l2.83 2.83m13 13 2.83 2.83m0-18.66L22.5 9.5m-13 13-2.83 2.83" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="16" r="7.1" fill="currentColor"/><circle cx="13.6" cy="13.7" r="1.45" fill="#f5f6f0"/></svg>
+        </span>
+        <span>FIELD<span class="wordmark-light">NOTES</span></span>
+      </a>
+      <span class="header-note"><span class="tiny-dot"></span> A tiny exercise in paying attention</span>
+    </header>
+
+    <main class="page-content">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow"><span>01</span> &nbsp; THE CLASSICS</p>
+        <div class="intro-row">
+          <div>
+            <h1 id="page-title">Mine<span>sweeper</span></h1>
+            <p class="intro-copy">A quiet little field full of secrets.<br class="mobile-break" /> Take your time. Watch your numbers.</p>
+          </div>
+          <div class="intro-stamp" aria-hidden="true">
+            <span>EST.</span><strong>1989</strong><span>STILL A GOOD IDEA</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="game-card" aria-label="Minesweeper game">
+        <div class="game-toolbar">
+          <label class="difficulty-control" for="difficulty-select">
+            <span class="control-caption">FIELD SIZE</span>
+            <select id="difficulty-select" aria-label="Choose difficulty">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="expert">Expert</option>
+              <option value="custom">Custom…</option>
+            </select>
+          </label>
+          <button class="new-game-button" id="new-game" type="button">
+            <span class="new-game-icon" aria-hidden="true">↻</span>
+            <span>New game</span>
+            <kbd>R</kbd>
+          </button>
+        </div>
+
+        <div class="game-console">
+          <div class="counter-block">
+            <span class="counter-label">MINES LEFT</span>
+            <output class="digital-counter" id="mine-counter" aria-label="Mines remaining">010</output>
+          </div>
+          <button class="face-button" id="face-button" type="button" aria-label="Start a new game" title="New game">
+            <svg class="face-icon" id="face-icon" viewBox="0 0 44 44" aria-hidden="true"></svg>
+          </button>
+          <div class="counter-block counter-block-right">
+            <span class="counter-label">TIME</span>
+            <output class="digital-counter" id="timer" aria-label="Elapsed time">000</output>
+          </div>
+        </div>
+
+        <div class="board-heading">
+          <span class="board-coordinate"><span class="coordinate-line"></span> THE FIELD</span>
+          <button class="flag-mode" id="flag-mode" type="button" aria-pressed="false">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 17V3m1 1h9l-2.5 3L15 10H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Flag mode <b id="flag-mode-state">off</b></span>
+          </button>
+        </div>
+
+        <div class="board-wrap" id="board-wrap">
+          <div class="board" id="board" role="grid" aria-label="Minesweeper board" aria-describedby="board-help"></div>
+        </div>
+        <p class="game-message" id="game-message" aria-live="polite">Pick a square to begin. Your first click is always safe.</p>
+        <p class="board-help" id="board-help">Click to uncover <span>·</span> Right-click to flag <span>·</span> Press F to flag</p>
+      </section>
+
+      <section class="below-game" aria-label="Game information">
+        <article class="note-card note-howto">
+          <div class="note-icon note-icon-number" aria-hidden="true">2</div>
+          <div><h2>Read the signs</h2><p>Each number tells you how many mines are touching that square. Corners count, too.</p></div>
+        </article>
+        <article class="note-card note-record">
+          <div class="record-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v3a4 4 0 0 1-8 0V4Zm0 2H5v1a4 4 0 0 0 4 4m7-5h3v1a4 4 0 0 1-4 4m-3 0v4m-4 3h8m-7-3h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><h2>Your best <span id="best-label">beginner</span></h2><p class="record-time" id="best-time">— — —</p></div>
+        </article>
+        <p class="tiny-credits">A familiar game, made for a slower moment. <span>✳</span></p>
+      </section>
+    </main>
+
+    <dialog class="custom-dialog" id="custom-dialog" aria-labelledby="custom-title">
+      <form id="custom-form">
+        <div class="dialog-topline"><span class="eyebrow"><span>✳</span> MAKE YOUR FIELD</span><button class="dialog-close" id="dialog-close" type="button" aria-label="Close">×</button></div>
+        <h2 id="custom-title">Set the odds.</h2>
+        <p class="dialog-copy">Choose a field that feels right. You can always start over.</p>
+        <div class="custom-fields">
+          <label>Rows<input id="custom-rows" name="rows" type="number" min="5" max="30" value="12" required /></label>
+          <label>Columns<input id="custom-cols" name="cols" type="number" min="5" max="40" value="12" required /></label>
+          <label>Mines<input id="custom-mines" name="mines" type="number" min="1" max="143" value="18" required /></label>
+        </div>
+        <p class="field-error" id="field-error" aria-live="polite"></p>
+        <button class="dialog-submit" type="submit">Build the field <span aria-hidden="true">↗</span></button>
+      </form>
+    </dialog>
+    <div class="dialog-backdrop" aria-hidden="true"></div>
+  </body>
+</html>
