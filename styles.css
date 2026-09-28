@@ -83,9 +83,10 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .cell.is-flagged { color: var(--coral); }
 .cell.is-flagged svg, .cell.is-mine svg { width: 19px; height: 19px; }
 .cell.is-chance-flag { color: #9a7a22; }
+.cell.is-third-flag { color: #5d7c48; }
 .chance-flag-icon { position: relative; width: 19px; height: 19px; display: block; }
 .chance-flag-icon svg { position: absolute; inset: 0; width: 19px; height: 19px; }
-.chance-flag-icon > span { position: absolute; top: 4px; left: 7px; color: #5d522d; font: 700 7px/1 var(--mono); }
+.chance-flag-icon > span { position: absolute; top: 4px; left: 6px; color: #5d522d; font: 700 7px/1 var(--mono); }
 .cell.is-wrong-flag { background: #f7d4c9; }
 .cell.is-exploded { border-color: #d96e59; background: #ee8167; }
 .cell.is-revealed.is-mine { border-color: #ecc2b6; background: #f4ded7; }

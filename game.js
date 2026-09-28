@@ -8,6 +8,7 @@
   };
   const FLAG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="3" r="1.7" fill="currentColor"/></svg>';
   const HALF_FLAG_ICON = '<span class="chance-flag-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="#f0dd8b" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>½</span></span>';
+  const THIRD_FLAG_ICON = '<span class="chance-flag-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="#c8dca4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>⅓</span></span>';
   const MINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2v3m0 13.6v3M2.2 12h3m13.6 0h3M5.08 5.08l2.12 2.12m9.6 9.6 2.12 2.12m0-13.84L16.8 7.2m-9.6 9.6-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="5.1" fill="currentColor"/><circle cx="10.3" cy="10.3" r="1.2" fill="#fffefa"/></svg>';
 
   const boardElement = document.querySelector("#board");
@@ -111,12 +112,17 @@
     faceButton.setAttribute("aria-label", labels[face]);
   }
 
-  function formatCounter(value) {
-    if (value < 0 && Number.isInteger(value)) return `-${String(Math.abs(value)).padStart(2, "0")}`;
-    const sign = value < 0 ? "-" : "";
-    const bounded = Math.min(Math.abs(value), 999);
-    const digits = Number.isInteger(value) ? String(bounded).padStart(3, "0") : bounded.toFixed(1).padStart(4, "0");
-    return `${sign}${digits}`;
+  function formatCounter(sixths) {
+    const sign = sixths < 0 ? "-" : "";
+    const absoluteSixths = Math.abs(sixths);
+    const wholeMines = Math.floor(absoluteSixths / 6);
+    const remainder = absoluteSixths % 6;
+    const fractions = ["", "⅙", "⅓", "½", "⅔", "⅚"];
+    if (remainder === 0) {
+      const width = sign ? 2 : 3;
+      return `${sign}${String(wholeMines).padStart(width, "0")}`;
+    }
+    return `${sign}${String(wholeMines).padStart(2, "0")}${fractions[remainder]}`;
   }
 
   function formatTime(seconds) {
@@ -124,18 +130,20 @@
     return String(safeSeconds).padStart(3, "0");
   }
 
-  function remainingMines() {
-    const markedMines = state.cells.reduce((total, cell) => {
-      if (cell.flagged === "certain") return total + 1;
-      if (cell.flagged === "chance") return total + 0.5;
+  function remainingMineSixths() {
+    const markedSixths = state.cells.reduce((total, cell) => {
+      if (cell.flagged === "certain") return total + 6;
+      if (cell.flagged === "chance") return total + 3;
+      if (cell.flagged === "third") return total + 2;
       return total;
     }, 0);
-    return state.mineTotal - markedMines;
+    return state.mineTotal * 6 - markedSixths;
   }
 
   function updateCounters() {
-    mineCounter.textContent = formatCounter(remainingMines());
-    mineCounter.setAttribute("aria-label", `${remainingMines()} mines remaining`);
+    const remainingSixths = remainingMineSixths();
+    mineCounter.textContent = formatCounter(remainingSixths);
+    mineCounter.setAttribute("aria-label", `${formatCounter(remainingSixths)} mines remaining`);
     timerOutput.textContent = formatTime(state.elapsed);
   }
 
@@ -186,6 +194,7 @@
     const col = (index % state.cols) + 1;
     const location = `Row ${row}, column ${col}`;
     if (cell.flagged === "chance") return `${location}, 50/50 chance flag`;
+    if (cell.flagged === "third") return `${location}, 1/3 chance flag`;
     if (cell.flagged) return `${location}, flagged`;
     if (!cell.revealed) return `${location}, covered`;
     if (cell.mine) return `${location}, mine`;
@@ -212,15 +221,14 @@
         if (cell.revealed) button.classList.add("is-revealed");
         if (cell.flagged) button.classList.add("is-flagged");
         if (cell.flagged === "chance") button.classList.add("is-chance-flag");
+        if (cell.flagged === "third") button.classList.add("is-third-flag");
         if (cell.exploded) button.classList.add("is-exploded");
         if (cell.revealed && cell.mine) button.classList.add("is-mine");
         if (state.status === "lost" && cell.flagged && !cell.mine) {
           button.classList.add("is-wrong-flag");
-          button.innerHTML = `${cell.flagged === "chance" ? HALF_FLAG_ICON : FLAG_ICON}<span class="sr-only"> Incorrect flag</span>`;
-        } else if (cell.flagged === "chance") {
-          button.innerHTML = HALF_FLAG_ICON;
+          button.innerHTML = `${flagIconFor(cell.flagged)}<span class="sr-only"> Incorrect flag</span>`;
         } else if (cell.flagged) {
-          button.innerHTML = FLAG_ICON;
+          button.innerHTML = flagIconFor(cell.flagged);
         } else if (cell.revealed && cell.mine) {
           button.innerHTML = MINE_ICON;
         } else if (cell.revealed && cell.adjacent > 0) {
@@ -237,6 +245,12 @@
     sizeBoardCells();
     boardWrap.setAttribute("aria-label", `${state.cols} columns. Scroll horizontally to view the full board.`);
     if (restoreFocus) boardElement.querySelector(`[data-index="${state.focusIndex}"]`)?.focus({ preventScroll: true });
+  }
+
+  function flagIconFor(flagType) {
+    if (flagType === "chance") return HALF_FLAG_ICON;
+    if (flagType === "third") return THIRD_FLAG_ICON;
+    return FLAG_ICON;
   }
 
   function sizeBoardCells() {
@@ -268,14 +282,21 @@
     if (state.status !== "ready" && state.status !== "playing") return;
     const cell = state.cells[index];
     if (cell.revealed) return;
-    cell.flagged = cell.flagged === false ? "certain" : cell.flagged === "certain" ? "chance" : false;
+    cell.flagged = cell.flagged === false
+      ? "certain"
+      : cell.flagged === "certain"
+        ? "chance"
+        : cell.flagged === "chance"
+          ? "third"
+          : false;
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
-    message.textContent = cell.flagged === "chance"
-      ? "Marked 50/50. It counts as half a mine and can be uncovered by a chord."
-      : cell.flagged
-        ? "Certain flag placed. Keep reading the field."
-        : "Flag removed.";
+    const flagMessages = {
+      certain: "Certain flag placed. Keep reading the field.",
+      chance: "Marked 50/50. It counts as half a mine and can be uncovered by a chord.",
+      third: "Marked 1/3. It counts as a third of a mine and can be uncovered by a chord.",
+    };
+    message.textContent = flagMessages[cell.flagged] || "Flag removed.";
   }
 
   function revealCells(indices) {
@@ -448,7 +469,7 @@
     state.flagMode = !state.flagMode;
     flagModeButton.setAttribute("aria-pressed", String(state.flagMode));
     flagModeState.textContent = state.flagMode ? "on" : "off";
-    message.textContent = state.flagMode ? "Flag mode is on. Tap to cycle clear → flag → ½ chance." : "Flag mode is off. Tap to uncover a square.";
+    message.textContent = state.flagMode ? "Flag mode is on. Tap to cycle clear → flag → ½ → ⅓." : "Flag mode is off. Tap to uncover a square.";
   });
 
   difficultySelect.addEventListener("change", () => {
