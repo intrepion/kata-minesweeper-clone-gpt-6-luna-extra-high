@@ -20,6 +20,8 @@
   const difficultySelect = document.querySelector("#difficulty-select");
   const bestLabel = document.querySelector("#best-label");
   const bestTime = document.querySelector("#best-time");
+  const hintButton = document.querySelector("#hint-button");
+  const hintCount = document.querySelector("#hint-count");
   const scoreboardButton = document.querySelector("#open-scoreboard");
   const scoresDialog = document.querySelector("#scores-dialog");
   const scoreTabs = document.querySelector("#score-tabs");
@@ -57,6 +59,8 @@
     elapsed: 0,
     timerId: null,
     flagMode: false,
+    hintsRemaining: 3,
+    hintsUsed: 0,
     focusIndex: 0,
   };
 
@@ -157,6 +161,31 @@
     mineCounter.textContent = formatCounter(remainingTwelfths);
     mineCounter.setAttribute("aria-label", `${formatCounter(remainingTwelfths)} mines remaining`);
     timerOutput.textContent = formatTime(state.elapsed);
+    updateHintControl();
+  }
+
+  function updateHintControl() {
+    const remainingTargets = state.cells.filter((cell) => cell.mine && !cell.revealed && cell.flagged !== "certain").length;
+    const canUseHint = state.status === "playing" && state.generated && state.hintsRemaining > 0 && remainingTargets > 0;
+    hintButton.disabled = !canUseHint;
+    hintCount.textContent = String(state.hintsRemaining);
+
+    if (state.hintsRemaining === 0) {
+      hintButton.setAttribute("aria-label", "No hints remaining");
+      hintButton.title = "No hints remain in this game";
+    } else if (state.status === "ready" || !state.generated) {
+      hintButton.setAttribute("aria-label", `Use a hint; ${state.hintsRemaining} available after your first reveal`);
+      hintButton.title = "Hints unlock after your first reveal";
+    } else if (state.status !== "playing") {
+      hintButton.setAttribute("aria-label", "Hints unavailable after the game ends");
+      hintButton.title = "Start a new game to use more hints";
+    } else if (remainingTargets === 0) {
+      hintButton.setAttribute("aria-label", "No unflagged mines remain to hint");
+      hintButton.title = "All remaining mines are already certainly flagged";
+    } else {
+      hintButton.setAttribute("aria-label", `Use a hint; ${state.hintsRemaining} remaining`);
+      hintButton.title = "Place a certain flag on one random remaining mine";
+    }
   }
 
   function storageKey() {
@@ -338,7 +367,7 @@
       fragment.append(row);
     }
     boardElement.replaceChildren(fragment);
-    boardElement.setAttribute("aria-label", `Minesweeper board, ${state.rows} rows by ${state.cols} columns`);
+    boardElement.setAttribute("aria-label", `Hidden Field board, ${state.rows} rows by ${state.cols} columns`);
     boardElement.style.gridTemplateColumns = `repeat(${state.cols}, var(--cell-size))`;
     sizeBoardCells();
     boardWrap.setAttribute("aria-label", `${state.cols} columns. Scroll horizontally to view the full board.`);
@@ -398,6 +427,23 @@
     message.textContent = flagMessages[cell.flagged] || "Flag removed.";
   }
 
+  function useHint() {
+    if (hintButton.disabled) return;
+    const candidates = state.cells.filter((cell) => cell.mine && !cell.revealed && cell.flagged !== "certain");
+    if (candidates.length === 0) {
+      updateHintControl();
+      return;
+    }
+    const target = candidates[Math.floor(Math.random() * candidates.length)];
+    target.flagged = "certain";
+    state.hintsRemaining -= 1;
+    state.hintsUsed += 1;
+    updateCounters();
+    renderBoard(boardElement.contains(document.activeElement));
+    const remainingHints = state.hintsRemaining;
+    message.textContent = `Hint used: one remaining mine was flagged. ${remainingHints} ${remainingHints === 1 ? "hint" : "hints"} left.`;
+  }
+
   function revealCells(indices) {
     const stack = [...indices];
     const visited = new Set();
@@ -434,10 +480,12 @@
       for (const cell of state.cells) if (cell.mine) cell.flagged = "certain";
       state.status = "won";
       setFace("win");
-      shouldEnterScore = qualifiesForHighScores(state.elapsed);
-      message.textContent = shouldEnterScore
-        ? `Top-three time! Add your name to the high score table.`
-        : `Field cleared in ${formatTime(state.elapsed)} seconds. Nicely done.`;
+      const qualifies = qualifiesForHighScores(state.elapsed);
+      shouldEnterScore = state.hintsUsed === 0 && qualifies;
+      if (shouldEnterScore) message.textContent = "Top-three time! Add your name to the high score table.";
+      else if (state.hintsUsed > 0 && qualifies) {
+        message.textContent = `Field cleared in ${formatTime(state.elapsed)} seconds. Hinted games don't enter the high score table.`;
+      } else message.textContent = `Field cleared in ${formatTime(state.elapsed)} seconds. Nicely done.`;
     } else {
       for (const cell of state.cells) if (cell.mine) cell.revealed = true;
       if (explodedIndex !== null) state.cells[explodedIndex].exploded = true;
@@ -487,7 +535,9 @@
 
   function newGame(config = null, mode = state.mode, customKey = state.customKey) {
     const focusWasInBoard = boardElement.contains(document.activeElement);
-    const next = config || PRESETS[mode] || PRESETS.beginner;
+    const next = config || (mode === "custom"
+      ? { rows: state.rows, cols: state.cols, mines: state.mineTotal }
+      : PRESETS[mode] || PRESETS.beginner);
     state.rows = next.rows;
     state.cols = next.cols;
     state.mineTotal = next.mines;
@@ -497,6 +547,8 @@
     state.generated = false;
     state.startedAt = null;
     state.elapsed = 0;
+    state.hintsRemaining = 3;
+    state.hintsUsed = 0;
     state.focusIndex = 0;
     if (state.timerId !== null) window.clearInterval(state.timerId);
     state.timerId = null;
@@ -566,6 +618,7 @@
 
   document.querySelector("#new-game").addEventListener("click", () => newGame());
   faceButton.addEventListener("click", () => newGame());
+  hintButton.addEventListener("click", useHint);
   flagModeButton.addEventListener("click", () => {
     state.flagMode = !state.flagMode;
     flagModeButton.setAttribute("aria-pressed", String(state.flagMode));

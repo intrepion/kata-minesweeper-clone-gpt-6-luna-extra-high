@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f1f3ed" />
-    <meta name="description" content="A little classic Minesweeper. Clear the field, mark the mines, and trust your numbers." />
-    <title>Minesweeper — Field Notes</title>
+    <meta name="description" content="A quiet logic puzzle about hidden mines. Clear the field, mark your deductions, and trust the numbers." />
+    <title>Hidden Field — Field Notes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -29,7 +29,7 @@
         <p class="eyebrow"><span>01</span> &nbsp; THE CLASSICS</p>
         <div class="intro-row">
           <div>
-            <h1 id="page-title">Mine<span>sweeper</span></h1>
+            <h1 id="page-title">Hidden <span>Field</span></h1>
             <p class="intro-copy">A quiet little field full of secrets.<br class="mobile-break" /> Take your time. Watch your numbers.</p>
           </div>
           <div class="intro-stamp" aria-hidden="true">
@@ -38,7 +38,7 @@
         </div>
       </section>
 
-      <section class="game-card" aria-label="Minesweeper game">
+      <section class="game-card" aria-label="Hidden Field game">
         <div class="game-toolbar">
           <label class="difficulty-control" for="difficulty-select">
             <span class="control-caption">FIELD SIZE</span>
@@ -76,14 +76,20 @@
 
         <div class="board-heading">
           <span class="board-coordinate"><span class="coordinate-line"></span> THE FIELD</span>
-          <button class="flag-mode" id="flag-mode" type="button" aria-pressed="false">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 17V3m1 1h9l-2.5 3L15 10H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span>Flag mode <b id="flag-mode-state">off</b></span>
-          </button>
+          <div class="board-tools">
+            <button class="hint-button" id="hint-button" type="button" aria-label="Use a hint; 3 available after your first reveal" title="Hints unlock after your first reveal" disabled>
+              <span class="hint-spark" aria-hidden="true">✦</span>
+              <span>Hint <b id="hint-count">3</b></span>
+            </button>
+            <button class="flag-mode" id="flag-mode" type="button" aria-pressed="false">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 17V3m1 1h9l-2.5 3L15 10H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Flag mode <b id="flag-mode-state">off</b></span>
+            </button>
+          </div>
         </div>
 
         <div class="board-wrap" id="board-wrap">
-          <div class="board" id="board" role="grid" aria-label="Minesweeper board" aria-describedby="board-help"></div>
+          <div class="board" id="board" role="grid" aria-label="Hidden Field board" aria-describedby="board-help"></div>
         </div>
         <p class="game-message" id="game-message" aria-live="polite">Pick a square to begin. Your first click is always safe.</p>
         <p class="board-help" id="board-help">Click to uncover <span>·</span> Right-click or F: flag → ½ → ⅓ → ¼ → clear <span>·</span> fractions are notes, not flags</p>

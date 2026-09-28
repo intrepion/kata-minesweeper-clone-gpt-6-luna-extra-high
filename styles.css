@@ -68,9 +68,15 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .face-button { width: 43px; height: 43px; display: grid; place-items: center; padding: 2px; border: 1px solid #e5e9df; border-radius: 50%; background: #fbfcf7; cursor: pointer; transition: transform .16s, background .16s; }
 .face-button:hover { background: #f2f6e8; transform: rotate(-8deg); }
 .face-icon { display: block; width: 35px; height: 35px; }
-.board-heading { height: 35px; display: flex; align-items: center; justify-content: space-between; }
+.board-heading { height: 35px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .board-coordinate { display: inline-flex; align-items: center; gap: 8px; color: #8e998f; font: 500 9px var(--mono); letter-spacing: .14em; }
 .coordinate-line { width: 17px; height: 1px; background: #b8c2ac; }
+.board-tools { display: inline-flex; align-items: center; gap: 2px; }
+.hint-button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #89938a; font-size: 10px; white-space: nowrap; cursor: pointer; }
+.hint-button:not(:disabled):hover { border-color: #d4dfb8; background: #f2f7e5; color: var(--green); }
+.hint-button:disabled { cursor: not-allowed; opacity: .58; }
+.hint-button b { color: #546258; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hint-spark { color: #a58c45; font-size: 13px; line-height: 1; }
 .flag-mode { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #89938a; font-size: 10px; cursor: pointer; }
 .flag-mode svg { width: 15px; height: 15px; }
 .flag-mode b { color: #546258; font-weight: 600; }
@@ -178,6 +184,8 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
   .record-counter { min-width: 53px; font-size: 15px; }.counter-label { font-size: 7px; }
   .board-wrap { padding: 7px; }
   .board { --cell-size: 31px; }
+  .board-tools { gap: 0; }
+  .hint-button, .flag-mode { gap: 4px; padding-right: 5px; padding-left: 5px; font-size: 9px; }
   .cell { font-size: 14px; }
   .cell.is-flagged svg, .cell.is-mine svg { width: 17px; height: 17px; }
   .probability-mark { font-size: 15px; }
