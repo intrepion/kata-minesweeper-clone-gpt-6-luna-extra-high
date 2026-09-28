@@ -112,8 +112,11 @@
   }
 
   function formatCounter(value) {
-    if (value < 0) return `-${String(Math.abs(value)).padStart(2, "0")}`;
-    return String(Math.min(value, 999)).padStart(3, "0");
+    if (value < 0 && Number.isInteger(value)) return `-${String(Math.abs(value)).padStart(2, "0")}`;
+    const sign = value < 0 ? "-" : "";
+    const bounded = Math.min(Math.abs(value), 999);
+    const digits = Number.isInteger(value) ? String(bounded).padStart(3, "0") : bounded.toFixed(1).padStart(4, "0");
+    return `${sign}${digits}`;
   }
 
   function formatTime(seconds) {
@@ -122,7 +125,12 @@
   }
 
   function remainingMines() {
-    return state.mineTotal - state.cells.filter((cell) => cell.flagged).length;
+    const markedMines = state.cells.reduce((total, cell) => {
+      if (cell.flagged === "certain") return total + 1;
+      if (cell.flagged === "chance") return total + 0.5;
+      return total;
+    }, 0);
+    return state.mineTotal - markedMines;
   }
 
   function updateCounters() {
@@ -264,7 +272,7 @@
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
     message.textContent = cell.flagged === "chance"
-      ? "Marked as a 50/50 chance. It counts as one flag."
+      ? "Marked 50/50. It counts as half a mine and can be uncovered by a chord."
       : cell.flagged
         ? "Certain flag placed. Keep reading the field."
         : "Flag removed.";
@@ -279,7 +287,8 @@
       if (visited.has(index)) continue;
       visited.add(index);
       const cell = state.cells[index];
-      if (!cell || cell.flagged || cell.revealed) continue;
+      if (!cell || cell.flagged === "certain" || cell.revealed) continue;
+      cell.flagged = false;
       if (cell.mine) {
         cell.exploded = true;
         explodedIndex = index;
@@ -288,10 +297,11 @@
       cell.revealed = true;
       if (cell.adjacent === 0) {
         for (const neighbor of neighborsOf(index)) {
-          if (!visited.has(neighbor) && !state.cells[neighbor].flagged) stack.push(neighbor);
+          if (!visited.has(neighbor) && state.cells[neighbor].flagged !== "certain") stack.push(neighbor);
         }
       }
     }
+    updateCounters();
     if (explodedIndex !== null) finishGame("lost", explodedIndex);
     else if (state.cells.filter((cell) => !cell.mine && cell.revealed).length === state.rows * state.cols - state.mineTotal) finishGame("won");
   }
@@ -320,7 +330,7 @@
   function reveal(index) {
     if (state.status !== "ready" && state.status !== "playing") return;
     const cell = state.cells[index];
-    if (cell.flagged) return;
+    if (cell.flagged === "certain") return;
     if (cell.revealed) {
       chord(index);
       return;
@@ -344,9 +354,9 @@
     const cell = state.cells[index];
     if (!cell.revealed || cell.adjacent === 0 || state.status !== "playing") return;
     const neighbors = neighborsOf(index);
-    const flaggedCount = neighbors.filter((neighbor) => state.cells[neighbor].flagged).length;
+    const flaggedCount = neighbors.filter((neighbor) => state.cells[neighbor].flagged === "certain").length;
     if (flaggedCount !== cell.adjacent) return;
-    revealCells(neighbors.filter((neighbor) => !state.cells[neighbor].flagged));
+    revealCells(neighbors.filter((neighbor) => state.cells[neighbor].flagged !== "certain"));
     if (state.status === "playing") {
       message.textContent = "Neighbors checked. Keep going.";
       renderBoard(boardElement.contains(document.activeElement));
