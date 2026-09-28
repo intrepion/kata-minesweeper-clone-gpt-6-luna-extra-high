@@ -20,6 +20,15 @@
   const difficultySelect = document.querySelector("#difficulty-select");
   const bestLabel = document.querySelector("#best-label");
   const bestTime = document.querySelector("#best-time");
+  const scoreboardButton = document.querySelector("#open-scoreboard");
+  const scoresDialog = document.querySelector("#scores-dialog");
+  const scoreTabs = document.querySelector("#score-tabs");
+  const scoreSubtitle = document.querySelector("#score-subtitle");
+  const scoreTableBody = document.querySelector("#score-table-body");
+  const scoreEntryDialog = document.querySelector("#score-entry-dialog");
+  const scoreEntryForm = document.querySelector("#score-entry-form");
+  const scoreNameInput = document.querySelector("#score-player-name");
+  const scoreEntryCopy = document.querySelector("#score-entry-copy");
   const faceButton = document.querySelector("#face-button");
   const faceIcon = document.querySelector("#face-icon");
   const flagModeButton = document.querySelector("#flag-mode");
@@ -32,6 +41,8 @@
   const fieldError = document.querySelector("#field-error");
   const RECORDS_KEY = "field-notes-minesweeper-records";
   const recordCache = {};
+  let recordsLoaded = false;
+  let pendingScore = null;
 
   const state = {
     rows: PRESETS.beginner.rows,
@@ -155,39 +166,118 @@
   function loadBest() {
     const label = state.mode === "custom" ? "custom" : state.mode;
     bestLabel.textContent = label;
-    const record = readRecords()[storageKey()];
-    const hasRecord = Number.isInteger(record);
-    bestTime.textContent = hasRecord ? `${formatTime(record)} sec` : "— — —";
-    highScoreOutput.textContent = hasRecord ? formatTime(record) : "---";
-    highScoreOutput.setAttribute("aria-label", hasRecord ? `High score: ${record} seconds for ${label}` : `No high score yet for ${label}`);
+    const record = scoreTableFor(storageKey())[0];
+    const hasRecord = Boolean(record);
+    bestTime.textContent = hasRecord ? `${formatTime(record.time)} sec` : "— — —";
+    highScoreOutput.textContent = hasRecord ? formatTime(record.time) : "---";
+    highScoreOutput.setAttribute("aria-label", hasRecord ? `High score: ${record.time} seconds for ${label}` : `No high score yet for ${label}`);
   }
 
   function readRecords() {
-    try {
-      const stored = JSON.parse(localStorage.getItem(RECORDS_KEY) || "{}");
-      if (stored && typeof stored === "object" && !Array.isArray(stored)) Object.assign(recordCache, stored);
-    } catch {
-      // Keep this page's records usable when storage is blocked by the browser.
+    if (!recordsLoaded) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(RECORDS_KEY) || "{}");
+        if (stored && typeof stored === "object" && !Array.isArray(stored)) Object.assign(recordCache, stored);
+      } catch {
+        // Keep this page's records usable when storage is blocked by the browser.
+      }
+      recordsLoaded = true;
     }
     return recordCache;
   }
 
-  function saveBest() {
-    const key = storageKey();
+  function scoreTableFor(key) {
+    const stored = readRecords()[key];
+    const table = Array.isArray(stored)
+      ? stored.filter((entry) => entry && typeof entry.name === "string" && Number.isInteger(entry.time) && entry.time >= 0)
+        .map((entry) => ({ name: entry.name.slice(0, 14), time: entry.time }))
+      : Number.isInteger(stored) && stored >= 0
+        ? [{ name: "PLAYER", time: stored }]
+        : [];
+    return table.sort((left, right) => left.time - right.time).slice(0, 3);
+  }
+
+  function qualifiesForHighScores(time, key = storageKey()) {
+    const table = scoreTableFor(key);
+    return table.length < 3 || time < table[table.length - 1].time;
+  }
+
+  function saveHighScore(name, time, key) {
     const records = readRecords();
-    const previous = records[key];
-    if (Number.isInteger(previous) && previous <= state.elapsed) {
-      loadBest();
-      return false;
-    }
-    records[key] = state.elapsed;
+    const table = scoreTableFor(key);
+    table.push({ name: name.trim().slice(0, 14) || "PLAYER", time });
+    table.sort((left, right) => left.time - right.time);
+    records[key] = table.slice(0, 3);
     try {
       localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
     } catch {
-      // The in-memory record remains visible for the current page session.
+      // Keep the current-session table usable when browser storage is unavailable.
     }
     loadBest();
-    return true;
+  }
+
+  function renderScoreTable(mode) {
+    if (mode === "custom" && state.mode !== "custom") mode = "beginner";
+    const customTab = scoreTabs.querySelector('[data-score-mode="custom"]');
+    customTab.hidden = state.mode !== "custom";
+    if (state.mode === "custom") customTab.textContent = `Custom ${state.rows}×${state.cols}`;
+
+    for (const tab of scoreTabs.querySelectorAll("[data-score-mode]")) {
+      const selected = tab.dataset.scoreMode === mode;
+      tab.classList.toggle("is-active", selected);
+      tab.setAttribute("aria-pressed", String(selected));
+    }
+
+    const config = mode === "custom" ? state : PRESETS[mode];
+    const key = mode === "custom" ? state.customKey : mode;
+    const label = mode === "custom" ? "Custom field" : `${mode[0].toUpperCase()}${mode.slice(1)}`;
+    scoreSubtitle.textContent = `${label} · ${config.rows} × ${config.cols} · ${config.mines ?? config.mineTotal} mines`;
+
+    const table = scoreTableFor(key);
+    const fragment = document.createDocumentFragment();
+    for (let rank = 0; rank < 3; rank += 1) {
+      const score = table[rank];
+      const row = document.createElement("tr");
+      if (!score) row.className = "score-empty";
+      const rankCell = document.createElement("td");
+      const nameCell = document.createElement("td");
+      const timeCell = document.createElement("td");
+      rankCell.textContent = String(rank + 1).padStart(2, "0");
+      nameCell.textContent = score?.name || "—";
+      timeCell.textContent = score ? formatTime(score.time) : "— — —";
+      row.append(rankCell, nameCell, timeCell);
+      fragment.append(row);
+    }
+    scoreTableBody.replaceChildren(fragment);
+  }
+
+  function openScoreboard(mode = state.mode) {
+    renderScoreTable(mode);
+    scoresDialog.showModal();
+  }
+
+  function openScoreEntry() {
+    pendingScore = { key: storageKey(), mode: state.mode, time: state.elapsed };
+    const label = state.mode === "custom" ? `${state.rows} × ${state.cols} custom` : state.mode;
+    scoreEntryCopy.textContent = `${label} · ${formatTime(state.elapsed)} seconds. Add your name to the top-three table.`;
+    scoreNameInput.value = "";
+    scoreEntryDialog.showModal();
+    scoreNameInput.focus();
+  }
+
+  function savePendingScore(event) {
+    event.preventDefault();
+    if (!pendingScore) {
+      scoreEntryDialog.close();
+      return;
+    }
+    const score = pendingScore;
+    const name = scoreNameInput.value.trim().slice(0, 14) || "PLAYER";
+    saveHighScore(name, score.time, score.key);
+    pendingScore = null;
+    scoreEntryDialog.close();
+    message.textContent = `${name}'s ${formatTime(score.time)} second time was added to the high score table.`;
+    openScoreboard(score.mode);
   }
 
   function cellLabel(cell, index) {
@@ -339,13 +429,14 @@
   function finishGame(result, explodedIndex = null) {
     state.status = result;
     stopTimer();
+    let shouldEnterScore = false;
     if (result === "won") {
       for (const cell of state.cells) if (cell.mine) cell.flagged = "certain";
       state.status = "won";
       setFace("win");
-      const isNewRecord = saveBest();
-      message.textContent = isNewRecord
-        ? `New high score! Field cleared in ${formatTime(state.elapsed)} seconds.`
+      shouldEnterScore = qualifiesForHighScores(state.elapsed);
+      message.textContent = shouldEnterScore
+        ? `Top-three time! Add your name to the high score table.`
         : `Field cleared in ${formatTime(state.elapsed)} seconds. Nicely done.`;
     } else {
       for (const cell of state.cells) if (cell.mine) cell.revealed = true;
@@ -355,6 +446,7 @@
     }
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
+    if (shouldEnterScore) openScoreEntry();
   }
 
   function reveal(index) {
@@ -493,6 +585,24 @@
   customDialog.addEventListener("click", (event) => {
     if (event.target === customDialog) closeCustomDialog();
   });
+  scoreboardButton.addEventListener("click", () => openScoreboard());
+  scoreTabs.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-score-mode]");
+    if (tab && !tab.hidden) renderScoreTable(tab.dataset.scoreMode);
+  });
+  document.querySelector("#close-scores").addEventListener("click", () => scoresDialog.close());
+  scoresDialog.addEventListener("click", (event) => {
+    if (event.target === scoresDialog) scoresDialog.close();
+  });
+  scoreEntryForm.addEventListener("submit", savePendingScore);
+  document.querySelector("#skip-score-entry").addEventListener("click", () => {
+    pendingScore = null;
+    scoreEntryDialog.close();
+    message.textContent = "Score not added to the high score table.";
+  });
+  scoreEntryDialog.addEventListener("close", () => {
+    pendingScore = null;
+  });
 
   customRows.addEventListener("input", () => {
     const safeMax = Math.max(1, Number(customRows.value) * Number(customCols.value) - 1);
@@ -523,7 +633,8 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key.toLowerCase() === "r" && !customDialog.open && !event.target.matches("input, select, textarea")) {
+    const dialogOpen = customDialog.open || scoresDialog.open || scoreEntryDialog.open;
+    if (event.key.toLowerCase() === "r" && !dialogOpen && !event.target.matches("input, select, textarea")) {
       newGame();
     }
     if (event.key === "Escape" && customDialog.open) closeCustomDialog();

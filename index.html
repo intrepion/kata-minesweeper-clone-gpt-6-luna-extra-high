@@ -68,10 +68,10 @@
             <span class="counter-label">TIME</span>
             <output class="digital-counter" id="timer" aria-label="Elapsed time">0000</output>
           </div>
-          <div class="counter-block counter-block-record">
-            <span class="counter-label">HIGH SCORE</span>
+          <button class="counter-block counter-block-record scoreboard-trigger" id="open-scoreboard" type="button" aria-label="Open high score tables" title="View high score tables">
+            <span class="counter-label">HIGH SCORES</span>
             <output class="digital-counter record-counter" id="high-score" aria-label="Best time for this field size">---</output>
-          </div>
+          </button>
         </div>
 
         <div class="board-heading">
@@ -114,6 +114,37 @@
         </div>
         <p class="field-error" id="field-error" aria-live="polite"></p>
         <button class="dialog-submit" type="submit">Build the field <span aria-hidden="true">↗</span></button>
+      </form>
+    </dialog>
+    <dialog class="custom-dialog scores-dialog" id="scores-dialog" aria-labelledby="scores-title">
+      <div class="dialog-topline"><span class="eyebrow"><span>✳</span> THE LEADERBOARD</span><button class="dialog-close" id="close-scores" type="button" aria-label="Close high scores">×</button></div>
+      <h2 id="scores-title">High scores</h2>
+      <div class="score-tabs" id="score-tabs" role="group" aria-label="Difficulty high score tables">
+        <button class="score-tab is-active" type="button" data-score-mode="beginner" aria-pressed="true">Beginner</button>
+        <button class="score-tab" type="button" data-score-mode="intermediate" aria-pressed="false">Intermediate</button>
+        <button class="score-tab" type="button" data-score-mode="expert" aria-pressed="false">Expert</button>
+        <button class="score-tab" id="custom-score-tab" type="button" data-score-mode="custom" aria-pressed="false" hidden>Custom</button>
+      </div>
+      <p class="score-subtitle" id="score-subtitle"></p>
+      <div class="score-table-wrap">
+        <table class="score-table">
+          <thead><tr><th scope="col">#</th><th scope="col">PLAYER</th><th scope="col">TIME</th></tr></thead>
+          <tbody id="score-table-body"></tbody>
+        </table>
+      </div>
+      <p class="score-footnote">Three fastest clear times, saved on this device.</p>
+    </dialog>
+    <dialog class="custom-dialog score-entry-dialog" id="score-entry-dialog" aria-labelledby="score-entry-title">
+      <form id="score-entry-form">
+        <div class="dialog-topline"><span class="eyebrow"><span>✳</span> A PLACE ON THE BOARD</span></div>
+        <h2 id="score-entry-title">You made the top three.</h2>
+        <p class="dialog-copy" id="score-entry-copy">Add your name to the high score table.</p>
+        <label class="score-name-label" for="score-player-name">PLAYER NAME</label>
+        <input class="score-name-input" id="score-player-name" name="playerName" type="text" maxlength="14" autocomplete="nickname" placeholder="Your name" />
+        <div class="score-entry-actions">
+          <button class="dialog-submit" type="submit">Save score <span aria-hidden="true">↗</span></button>
+          <button class="dialog-secondary" id="skip-score-entry" type="button">Skip</button>
+        </div>
       </form>
     </dialog>
     <div class="dialog-backdrop" aria-hidden="true"></div>
