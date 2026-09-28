@@ -7,6 +7,7 @@
     expert: { rows: 16, cols: 30, mines: 99, label: "expert" },
   };
   const FLAG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="3" r="1.7" fill="currentColor"/></svg>';
+  const HALF_FLAG_ICON = '<span class="chance-flag-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="#f0dd8b" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>½</span></span>';
   const MINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2v3m0 13.6v3M2.2 12h3m13.6 0h3M5.08 5.08l2.12 2.12m9.6 9.6 2.12 2.12m0-13.84L16.8 7.2m-9.6 9.6-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="5.1" fill="currentColor"/><circle cx="10.3" cy="10.3" r="1.2" fill="#fffefa"/></svg>';
 
   const boardElement = document.querySelector("#board");
@@ -176,6 +177,7 @@
     const row = Math.floor(index / state.cols) + 1;
     const col = (index % state.cols) + 1;
     const location = `Row ${row}, column ${col}`;
+    if (cell.flagged === "chance") return `${location}, 50/50 chance flag`;
     if (cell.flagged) return `${location}, flagged`;
     if (!cell.revealed) return `${location}, covered`;
     if (cell.mine) return `${location}, mine`;
@@ -197,15 +199,18 @@
         button.dataset.index = String(index);
         button.setAttribute("role", "gridcell");
         button.setAttribute("aria-label", cellLabel(cell, index));
-        button.setAttribute("aria-pressed", String(cell.flagged));
+        button.setAttribute("aria-pressed", String(Boolean(cell.flagged)));
         button.tabIndex = index === state.focusIndex ? 0 : -1;
         if (cell.revealed) button.classList.add("is-revealed");
         if (cell.flagged) button.classList.add("is-flagged");
+        if (cell.flagged === "chance") button.classList.add("is-chance-flag");
         if (cell.exploded) button.classList.add("is-exploded");
         if (cell.revealed && cell.mine) button.classList.add("is-mine");
         if (state.status === "lost" && cell.flagged && !cell.mine) {
           button.classList.add("is-wrong-flag");
-          button.innerHTML = `${FLAG_ICON}<span class="sr-only"> Incorrect flag</span>`;
+          button.innerHTML = `${cell.flagged === "chance" ? HALF_FLAG_ICON : FLAG_ICON}<span class="sr-only"> Incorrect flag</span>`;
+        } else if (cell.flagged === "chance") {
+          button.innerHTML = HALF_FLAG_ICON;
         } else if (cell.flagged) {
           button.innerHTML = FLAG_ICON;
         } else if (cell.revealed && cell.mine) {
@@ -251,14 +256,18 @@
     updateCounters();
   }
 
-  function toggleFlag(index) {
+  function cycleFlag(index) {
     if (state.status !== "ready" && state.status !== "playing") return;
     const cell = state.cells[index];
     if (cell.revealed) return;
-    cell.flagged = !cell.flagged;
+    cell.flagged = cell.flagged === false ? "certain" : cell.flagged === "certain" ? "chance" : false;
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
-    message.textContent = cell.flagged ? "Flag placed. Keep reading the field." : "Flag removed.";
+    message.textContent = cell.flagged === "chance"
+      ? "Marked as a 50/50 chance. It counts as one flag."
+      : cell.flagged
+        ? "Certain flag placed. Keep reading the field."
+        : "Flag removed.";
   }
 
   function revealCells(indices) {
@@ -291,7 +300,7 @@
     state.status = result;
     stopTimer();
     if (result === "won") {
-      for (const cell of state.cells) if (cell.mine) cell.flagged = true;
+      for (const cell of state.cells) if (cell.mine) cell.flagged = "certain";
       state.status = "won";
       setFace("win");
       const isNewRecord = saveBest();
@@ -388,7 +397,7 @@
     if (!button) return;
     const index = Number(button.dataset.index);
     state.focusIndex = index;
-    if (state.flagMode) toggleFlag(index);
+    if (state.flagMode) cycleFlag(index);
     else reveal(index);
   });
 
@@ -397,7 +406,7 @@
     if (!button) return;
     event.preventDefault();
     state.focusIndex = Number(button.dataset.index);
-    toggleFlag(state.focusIndex);
+    cycleFlag(state.focusIndex);
   });
 
   boardElement.addEventListener("keydown", (event) => {
@@ -419,7 +428,7 @@
     } else if (event.key.toLowerCase() === "f") {
       event.preventDefault();
       state.focusIndex = index;
-      toggleFlag(index);
+      cycleFlag(index);
     }
   });
 
@@ -429,7 +438,7 @@
     state.flagMode = !state.flagMode;
     flagModeButton.setAttribute("aria-pressed", String(state.flagMode));
     flagModeState.textContent = state.flagMode ? "on" : "off";
-    message.textContent = state.flagMode ? "Flag mode is on. Tap a covered square to mark it." : "Flag mode is off. Tap to uncover a square.";
+    message.textContent = state.flagMode ? "Flag mode is on. Tap to cycle clear → flag → ½ chance." : "Flag mode is off. Tap to uncover a square.";
   });
 
   difficultySelect.addEventListener("change", () => {
