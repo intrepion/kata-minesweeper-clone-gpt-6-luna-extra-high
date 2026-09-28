@@ -7,8 +7,7 @@
     expert: { rows: 16, cols: 30, mines: 99, label: "expert" },
   };
   const FLAG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="3" r="1.7" fill="currentColor"/></svg>';
-  const HALF_FLAG_ICON = '<span class="chance-flag-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="#f0dd8b" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>½</span></span>';
-  const THIRD_FLAG_ICON = '<span class="chance-flag-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="#c8dca4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>⅓</span></span>';
+  const PROBABILITY_MARKS = { chance: "½", third: "⅓", quarter: "¼" };
   const MINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2v3m0 13.6v3M2.2 12h3m13.6 0h3M5.08 5.08l2.12 2.12m9.6 9.6 2.12 2.12m0-13.84L16.8 7.2m-9.6 9.6-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="5.1" fill="currentColor"/><circle cx="10.3" cy="10.3" r="1.2" fill="#fffefa"/></svg>';
 
   const boardElement = document.querySelector("#board");
@@ -112,17 +111,17 @@
     faceButton.setAttribute("aria-label", labels[face]);
   }
 
-  function formatCounter(sixths) {
-    const sign = sixths < 0 ? "-" : "";
-    const absoluteSixths = Math.abs(sixths);
-    const wholeMines = Math.floor(absoluteSixths / 6);
-    const remainder = absoluteSixths % 6;
-    const fractions = ["", "⅙", "⅓", "½", "⅔", "⅚"];
-    if (remainder === 0) {
+  function formatCounter(twelfths) {
+    const sign = twelfths < 0 ? "-" : "";
+    const absoluteTwelfths = Math.abs(twelfths);
+    if (absoluteTwelfths % 12 === 0) {
       const width = sign ? 2 : 3;
-      return `${sign}${String(wholeMines).padStart(width, "0")}`;
+      return `${sign}${String(absoluteTwelfths / 12).padStart(width, "0")}`;
     }
-    return `${sign}${String(wholeMines).padStart(2, "0")}${fractions[remainder]}`;
+    const hundredths = Math.round(absoluteTwelfths * 100 / 12);
+    const wholeMines = Math.floor(hundredths / 100);
+    const fraction = hundredths % 100;
+    return `${sign}${String(wholeMines).padStart(2, "0")}.${String(fraction).padStart(2, "0")}`;
   }
 
   function formatTime(seconds) {
@@ -130,20 +129,21 @@
     return String(safeSeconds).padStart(3, "0");
   }
 
-  function remainingMineSixths() {
-    const markedSixths = state.cells.reduce((total, cell) => {
-      if (cell.flagged === "certain") return total + 6;
-      if (cell.flagged === "chance") return total + 3;
-      if (cell.flagged === "third") return total + 2;
+  function remainingMineTwelfths() {
+    const markedTwelfths = state.cells.reduce((total, cell) => {
+      if (cell.flagged === "certain") return total + 12;
+      if (cell.flagged === "chance") return total + 6;
+      if (cell.flagged === "third") return total + 4;
+      if (cell.flagged === "quarter") return total + 3;
       return total;
     }, 0);
-    return state.mineTotal * 6 - markedSixths;
+    return state.mineTotal * 12 - markedTwelfths;
   }
 
   function updateCounters() {
-    const remainingSixths = remainingMineSixths();
-    mineCounter.textContent = formatCounter(remainingSixths);
-    mineCounter.setAttribute("aria-label", `${formatCounter(remainingSixths)} mines remaining`);
+    const remainingTwelfths = remainingMineTwelfths();
+    mineCounter.textContent = formatCounter(remainingTwelfths);
+    mineCounter.setAttribute("aria-label", `${formatCounter(remainingTwelfths)} mines remaining`);
     timerOutput.textContent = formatTime(state.elapsed);
   }
 
@@ -193,8 +193,9 @@
     const row = Math.floor(index / state.cols) + 1;
     const col = (index % state.cols) + 1;
     const location = `Row ${row}, column ${col}`;
-    if (cell.flagged === "chance") return `${location}, 50/50 chance flag`;
-    if (cell.flagged === "third") return `${location}, 1/3 chance flag`;
+    if (cell.flagged === "chance") return `${location}, 50/50 chance note`;
+    if (cell.flagged === "third") return `${location}, 1/3 chance note`;
+    if (cell.flagged === "quarter") return `${location}, 1/4 chance note`;
     if (cell.flagged) return `${location}, flagged`;
     if (!cell.revealed) return `${location}, covered`;
     if (cell.mine) return `${location}, mine`;
@@ -222,13 +223,19 @@
         if (cell.flagged) button.classList.add("is-flagged");
         if (cell.flagged === "chance") button.classList.add("is-chance-flag");
         if (cell.flagged === "third") button.classList.add("is-third-flag");
+        if (cell.flagged === "quarter") button.classList.add("is-quarter-flag");
         if (cell.exploded) button.classList.add("is-exploded");
         if (cell.revealed && cell.mine) button.classList.add("is-mine");
+        const probabilityMark = PROBABILITY_MARKS[cell.flagged];
         if (state.status === "lost" && cell.flagged && !cell.mine) {
           button.classList.add("is-wrong-flag");
-          button.innerHTML = `${flagIconFor(cell.flagged)}<span class="sr-only"> Incorrect flag</span>`;
+          button.innerHTML = probabilityMark
+            ? `<span class="probability-mark">${probabilityMark}</span><span class="sr-only"> Incorrect probability note</span>`
+            : `${FLAG_ICON}<span class="sr-only"> Incorrect flag</span>`;
+        } else if (probabilityMark) {
+          button.innerHTML = `<span class="probability-mark">${probabilityMark}</span>`;
         } else if (cell.flagged) {
-          button.innerHTML = flagIconFor(cell.flagged);
+          button.innerHTML = FLAG_ICON;
         } else if (cell.revealed && cell.mine) {
           button.innerHTML = MINE_ICON;
         } else if (cell.revealed && cell.adjacent > 0) {
@@ -245,12 +252,6 @@
     sizeBoardCells();
     boardWrap.setAttribute("aria-label", `${state.cols} columns. Scroll horizontally to view the full board.`);
     if (restoreFocus) boardElement.querySelector(`[data-index="${state.focusIndex}"]`)?.focus({ preventScroll: true });
-  }
-
-  function flagIconFor(flagType) {
-    if (flagType === "chance") return HALF_FLAG_ICON;
-    if (flagType === "third") return THIRD_FLAG_ICON;
-    return FLAG_ICON;
   }
 
   function sizeBoardCells() {
@@ -288,13 +289,16 @@
         ? "chance"
         : cell.flagged === "chance"
           ? "third"
-          : false;
+          : cell.flagged === "third"
+            ? "quarter"
+            : false;
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
     const flagMessages = {
       certain: "Certain flag placed. Keep reading the field.",
       chance: "Marked 50/50. It counts as half a mine and can be uncovered by a chord.",
       third: "Marked 1/3. It counts as a third of a mine and can be uncovered by a chord.",
+      quarter: "Marked 1/4. It counts as a quarter of a mine and can be uncovered by a chord.",
     };
     message.textContent = flagMessages[cell.flagged] || "Flag removed.";
   }
@@ -469,7 +473,7 @@
     state.flagMode = !state.flagMode;
     flagModeButton.setAttribute("aria-pressed", String(state.flagMode));
     flagModeState.textContent = state.flagMode ? "on" : "off";
-    message.textContent = state.flagMode ? "Flag mode is on. Tap to cycle clear → flag → ½ → ⅓." : "Flag mode is off. Tap to uncover a square.";
+    message.textContent = state.flagMode ? "Flag mode is on. Tap to cycle clear → flag → ½ → ⅓ → ¼." : "Flag mode is off. Tap to uncover a square.";
   });
 
   difficultySelect.addEventListener("change", () => {
