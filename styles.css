@@ -90,7 +90,14 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .cell.is-third-flag { color: #5d7c48; }
 .cell.is-quarter-flag { color: #5b7199; }
 .probability-mark { font: 700 17px/1 var(--display); letter-spacing: -.06em; }
-.cell.is-wrong-flag { background: #f7d4c9; }
+.cell.is-incorrect-mark {
+  position: relative;
+  z-index: 1;
+  border: 2px solid #b74839;
+  background: #f2c0b5;
+  box-shadow: 0 0 0 1px #fffefa, inset 0 0 0 1px #fbe6e0;
+  color: #963d32;
+}
 .cell.is-exploded { border-color: #d96e59; background: #ee8167; }
 .cell.is-revealed.is-mine { border-color: #ecc2b6; background: #f4ded7; }
 .cell.is-revealed.is-mine.is-exploded { border-color: #d96e59; background: #ee8167; }

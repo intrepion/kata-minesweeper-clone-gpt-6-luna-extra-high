@@ -319,7 +319,7 @@
         if (cell.revealed && cell.mine) button.classList.add("is-mine");
         const probabilityMark = PROBABILITY_MARKS[cell.flagged];
         if (state.status === "lost" && cell.flagged && !cell.mine) {
-          button.classList.add("is-wrong-flag");
+          button.classList.add("is-incorrect-mark");
           button.innerHTML = probabilityMark
             ? `<span class="probability-mark">${probabilityMark}</span><span class="sr-only"> Incorrect probability note</span>`
             : `${FLAG_ICON}<span class="sr-only"> Incorrect flag</span>`;
@@ -442,7 +442,7 @@
       for (const cell of state.cells) if (cell.mine) cell.revealed = true;
       if (explodedIndex !== null) state.cells[explodedIndex].exploded = true;
       setFace("dead");
-      message.textContent = "That one was live. Take a breath and try again.";
+      message.textContent = "That one was live. Incorrect flags and notes are marked in red.";
     }
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
