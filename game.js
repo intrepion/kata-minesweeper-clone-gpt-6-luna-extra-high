@@ -20,9 +20,24 @@
   const PROBABILITY_MARKS = { chance: "½", third: "⅓", quarter: "¼" };
   const MINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2v3m0 13.6v3M2.2 12h3m13.6 0h3M5.08 5.08l2.12 2.12m9.6 9.6 2.12 2.12m0-13.84L16.8 7.2m-9.6 9.6-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="5.1" fill="currentColor"/><circle cx="10.3" cy="10.3" r="1.2" fill="#fffefa"/></svg>';
   const SOUND_PREFERENCE_KEY = "field-notes-sound-enabled";
-  const MUSIC_STEP_SECONDS = 60 / 112 / 2;
-  const MUSIC_MELODY = [523.25, 0, 659.25, 0, 783.99, 0, 659.25, 0, 587.33, 0, 698.46, 0, 880, 0, 698.46, 0, 659.25, 0, 783.99, 0, 987.77, 0, 783.99, 0, 698.46, 0, 880, 0, 1046.5, 0, 880, 0];
-  const MUSIC_ROOTS = [130.81, 98, 110, 87.31];
+  const MUSIC_TRACKS = {
+    menu: {
+      bpm: 100,
+      melody: [523.25, 0, 659.25, 0, 783.99, 0, 659.25, 0, 440, 0, 587.33, 0, 659.25, 0, 587.33, 0],
+      chords: [[261.63, 329.63, 392], [220, 261.63, 329.63]],
+      bassRoots: [130.81, 110],
+      bassPattern: [0.9, 0, 0, 0.55, 0, 0, 0.65, 0],
+      drums: false,
+    },
+    game: {
+      bpm: 150,
+      melody: [783.99, 659.25, 523.25, 659.25, 783.99, 0, 880, 784, 783.99, 880, 987.77, 880, 783.99, 0, 659.25, 784, 880, 783.99, 659.25, 783.99, 880, 0, 987.77, 880, 783.99, 698.46, 659.25, 698.46, 783.99, 0, 880, 1046.5],
+      chords: [[261.63, 329.63, 392], [196, 246.94, 293.66], [220, 261.63, 329.63], [174.61, 220, 261.63]],
+      bassRoots: [130.81, 98, 110, 87.31],
+      bassPattern: [1, 0, 0.55, 0.75, 0.9, 0, 0.55, 0.8],
+      drums: true,
+    },
+  };
   const SOUND_EFFECTS = {
     mark: [{ frequency: 740, duration: 0.08, volume: 0.14, waveform: "triangle" }],
     unmark: [{ frequency: 520, endFrequency: 360, duration: 0.12, volume: 0.13, waveform: "triangle" }],
@@ -103,7 +118,7 @@
   let effectsBus = null;
   let musicInterval = null;
   let musicStepIndex = 0;
-  let musicStartedForGame = false;
+  let musicTrack = null;
 
   try {
     soundEnabled = window.localStorage.getItem(SOUND_PREFERENCE_KEY) !== "false";
@@ -199,28 +214,71 @@
     }
   }
 
-  function scheduleMusicStep() {
-    if (!audioContext || !musicBus || !soundEnabled || !musicStartedForGame || state.status !== "playing") return;
-    const when = audioContext.currentTime + 0.025;
-    const note = MUSIC_MELODY[musicStepIndex];
-    if (note) playTone(note, 0.2, 0.19, musicBus, when, "triangle");
-    if (musicStepIndex % 8 === 0) {
-      const root = MUSIC_ROOTS[Math.floor(musicStepIndex / 8)];
-      playTone(root, 0.52, 0.16, musicBus, when, "sine");
-      playTone(root * 1.5, 0.38, 0.055, musicBus, when + 0.035, "sine");
-    } else if (musicStepIndex % 8 === 4) {
-      playTone(MUSIC_ROOTS[Math.floor(musicStepIndex / 8)], 0.32, 0.1, musicBus, when, "sine");
+  function playNoise(duration, volume, bus, when, highpassFrequency) {
+    if (!audioContext || !bus) return;
+    const sampleCount = Math.ceil(audioContext.sampleRate * duration);
+    const buffer = audioContext.createBuffer(1, sampleCount, audioContext.sampleRate);
+    const samples = buffer.getChannelData(0);
+    for (let index = 0; index < sampleCount; index += 1) {
+      samples[index] = (Math.random() * 2 - 1) * (1 - index / sampleCount);
     }
-    musicStepIndex = (musicStepIndex + 1) % MUSIC_MELODY.length;
+    const source = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const envelope = audioContext.createGain();
+    source.buffer = buffer;
+    filter.type = "highpass";
+    filter.frequency.value = highpassFrequency;
+    envelope.gain.setValueAtTime(0.0001, when);
+    envelope.gain.exponentialRampToValueAtTime(volume, when + Math.min(0.008, duration / 3));
+    envelope.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    source.connect(filter);
+    filter.connect(envelope);
+    envelope.connect(bus);
+    source.start(when);
+    source.stop(when + duration + 0.015);
   }
 
-  function startMusicLoop() {
-    if (!soundEnabled || !musicStartedForGame || state.status !== "playing" || musicInterval !== null) return;
+  function scheduleMusicStep() {
+    const track = MUSIC_TRACKS[musicTrack];
+    if (!audioContext || !musicBus || !soundEnabled || !track) return;
+    if ((musicTrack === "menu" && state.status !== "ready") || (musicTrack === "game" && state.status !== "playing")) return;
+    const when = audioContext.currentTime + 0.025;
+    const step = musicStepIndex % track.melody.length;
+    const beatStep = step % 8;
+    const bar = Math.floor(step / 8) % track.chords.length;
+    const melodyNote = track.melody[step];
+    const bassAccent = track.bassPattern[beatStep];
+    const root = track.bassRoots[bar];
+    if (melodyNote) playTone(melodyNote, track.drums ? 0.17 : 0.25, track.drums ? 0.16 : 0.13, musicBus, when, "triangle");
+    if (bassAccent) playTone(root, track.drums ? 0.19 : 0.34, 0.15 * bassAccent, musicBus, when, "sine");
+    if (beatStep === 0 || (track.drums && beatStep === 4)) {
+      const chordVolume = track.drums ? 0.032 : 0.025;
+      for (const chordNote of track.chords[bar]) {
+        playTone(chordNote, track.drums ? 0.24 : 0.46, chordVolume, musicBus, when, "triangle");
+      }
+    }
+    if (track.drums) {
+      if (beatStep === 0 || beatStep === 4) playTone(135, 0.15, 0.2, musicBus, when, "sine", 48);
+      else if (beatStep === 2 || beatStep === 6) playNoise(0.085, 0.045, musicBus, when, 1400);
+      if (beatStep % 2 === 1) playNoise(0.026, 0.018, musicBus, when, 7000);
+    }
+    musicStepIndex = (step + 1) % track.melody.length;
+  }
+
+  function startMusicLoop(trackName) {
+    const track = MUSIC_TRACKS[trackName];
+    if (!soundEnabled || !track) return;
+    if ((trackName === "menu" && state.status !== "ready") || (trackName === "game" && state.status !== "playing")) return;
     const context = ensureAudioContext();
     if (!context) return;
+    const sameTrack = musicTrack === trackName;
+    if (sameTrack && musicInterval !== null) return;
+    if (musicInterval !== null) window.clearInterval(musicInterval);
+    musicTrack = trackName;
+    if (!sameTrack) musicStepIndex = 0;
     setBusGain(musicBus, 0.42);
     scheduleMusicStep();
-    musicInterval = window.setInterval(scheduleMusicStep, MUSIC_STEP_SECONDS * 1000);
+    musicInterval = window.setInterval(scheduleMusicStep, (60 / track.bpm / 2) * 1000);
   }
 
   function stopMusicLoop() {
@@ -240,7 +298,8 @@
     }
     if (!ensureAudioContext()) return;
     setBusGain(effectsBus, 0.68);
-    startMusicLoop();
+    if (state.status === "playing") startMusicLoop("game");
+    else if (state.status === "ready") startMusicLoop("menu");
   }
 
   function cellTemplate() {
@@ -669,7 +728,7 @@
     pauseDialog.close();
     state.status = "playing";
     startTimer();
-    startMusicLoop();
+    startMusicLoop("game");
     playSoundEffect("resume");
     updateCounters();
     pauseButton.focus();
@@ -698,6 +757,7 @@
     };
     message.textContent = flagMessages[cell.flagged] || "Flag removed.";
     playSoundEffect(cell.flagged ? "mark" : "unmark");
+    if (state.status === "ready") startMusicLoop("menu");
   }
 
   function useHint() {
@@ -757,6 +817,7 @@
     state.status = result;
     stopTimer();
     stopMusicLoop();
+    musicTrack = null;
     playSoundEffect(result === "won" ? "win" : "loss");
     let shouldEnterScore = false;
     if (result === "won") {
@@ -791,8 +852,7 @@
     if (!state.generated) {
       generateField(index);
       state.status = "playing";
-      musicStartedForGame = true;
-      startMusicLoop();
+      startMusicLoop("game");
       startTimer();
     }
     setFace("shock");
@@ -823,7 +883,7 @@
   function newGame(config = null, mode = state.mode, customKey = state.customKey) {
     const focusWasInBoard = boardElement.contains(document.activeElement);
     stopMusicLoop();
-    musicStartedForGame = false;
+    musicTrack = null;
     musicStepIndex = 0;
     const next = config || (mode === "custom"
       ? { rows: state.rows, cols: state.cols, mines: state.mineTotal }
@@ -992,6 +1052,7 @@
     const dialogOpen = customDialog.open || scoresDialog.open || scoreEntryDialog.open || pauseDialog.open || hintConfirmDialog.open;
     if (event.key.toLowerCase() === "r" && !dialogOpen && !event.target.matches("input, select, textarea")) {
       newGame();
+      startMusicLoop("menu");
     }
     if (event.key !== "Escape" || event.repeat) return;
     if (pauseDialog.open) {
@@ -1008,7 +1069,12 @@
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) stopMusicLoop();
-    else if (state.status === "playing" && musicStartedForGame) startMusicLoop();
+    else if (state.status === "playing") startMusicLoop("game");
+    else if (state.status === "ready" && musicTrack === "menu") startMusicLoop("menu");
+  });
+  document.addEventListener("click", () => {
+    const dialogOpen = customDialog.open || scoresDialog.open || scoreEntryDialog.open || pauseDialog.open || hintConfirmDialog.open;
+    if (state.status === "ready" && !dialogOpen) startMusicLoop("menu");
   });
   window.addEventListener("resize", sizeBoardCells);
 
