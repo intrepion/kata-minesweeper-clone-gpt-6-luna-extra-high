@@ -72,6 +72,13 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .face-button { width: 43px; height: 43px; display: grid; place-items: center; padding: 2px; border: 1px solid #e5e9df; border-radius: 50%; background: #fbfcf7; cursor: pointer; transition: transform .16s, background .16s; }
 .face-button:hover { background: #f2f6e8; transform: rotate(-8deg); }
 .face-icon { display: block; width: 35px; height: 35px; }
+.sound-toggle { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; padding: 0; border: 1px solid #e5e9df; border-radius: 50%; background: #fbfcf7; color: #65736a; cursor: pointer; }
+.sound-toggle:hover { border-color: #c8d0c5; background: #f2f5ee; color: var(--green-dark); }
+.sound-toggle:focus-visible { outline: 2px solid #799269; outline-offset: 3px; }
+.sound-toggle svg { width: 18px; height: 18px; }
+.sound-muted { display: none; }
+.sound-toggle[aria-pressed="false"] .sound-waves { display: none; }
+.sound-toggle[aria-pressed="false"] .sound-muted { display: block; }
 .board-heading { height: 35px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .board-heading-status { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; }
 .board-coordinate { display: inline-flex; align-items: center; gap: 8px; color: #8e998f; font: 500 9px var(--mono); letter-spacing: .14em; }

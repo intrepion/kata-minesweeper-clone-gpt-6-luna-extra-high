@@ -68,6 +68,13 @@
           <button class="face-button" id="face-button" type="button" aria-label="Start a new game" title="New game">
             <svg class="face-icon" id="face-icon" viewBox="0 0 44 44" aria-hidden="true"></svg>
           </button>
+          <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Turn music and sound effects off" aria-pressed="true" title="Music and sound effects on">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 10v4h3l5 4V6l-5 4H4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path class="sound-waves" d="M15 9a5 5 0 0 1 0 6m2.5-8a9 9 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path class="sound-muted" d="m16 9 5 6m0-6-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
           <div class="counter-block counter-block-right">
             <span class="counter-label">TIME</span>
             <output class="digital-counter" id="timer" aria-label="Elapsed time">0000</output>

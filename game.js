@@ -19,6 +19,40 @@
   const FLAG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="3" r="1.7" fill="currentColor"/></svg>';
   const PROBABILITY_MARKS = { chance: "½", third: "⅓", quarter: "¼" };
   const MINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2v3m0 13.6v3M2.2 12h3m13.6 0h3M5.08 5.08l2.12 2.12m9.6 9.6 2.12 2.12m0-13.84L16.8 7.2m-9.6 9.6-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="5.1" fill="currentColor"/><circle cx="10.3" cy="10.3" r="1.2" fill="#fffefa"/></svg>';
+  const SOUND_PREFERENCE_KEY = "field-notes-sound-enabled";
+  const MUSIC_STEP_SECONDS = 60 / 112 / 2;
+  const MUSIC_MELODY = [523.25, 0, 659.25, 0, 783.99, 0, 659.25, 0, 587.33, 0, 698.46, 0, 880, 0, 698.46, 0, 659.25, 0, 783.99, 0, 987.77, 0, 783.99, 0, 698.46, 0, 880, 0, 1046.5, 0, 880, 0];
+  const MUSIC_ROOTS = [130.81, 98, 110, 87.31];
+  const SOUND_EFFECTS = {
+    mark: [{ frequency: 740, duration: 0.08, volume: 0.14, waveform: "triangle" }],
+    unmark: [{ frequency: 520, endFrequency: 360, duration: 0.12, volume: 0.13, waveform: "triangle" }],
+    reveal: [
+      { frequency: 659.25, duration: 0.1, volume: 0.11, waveform: "sine" },
+      { frequency: 880, duration: 0.13, volume: 0.07, waveform: "sine", delay: 0.045 },
+    ],
+    hint: [
+      { frequency: 523.25, duration: 0.13, volume: 0.12, waveform: "triangle" },
+      { frequency: 659.25, duration: 0.13, volume: 0.12, waveform: "triangle", delay: 0.09 },
+      { frequency: 783.99, duration: 0.2, volume: 0.13, waveform: "triangle", delay: 0.18 },
+    ],
+    pause: [{ frequency: 587.33, duration: 0.1, volume: 0.1, waveform: "sine" }],
+    resume: [
+      { frequency: 659.25, duration: 0.09, volume: 0.1, waveform: "sine" },
+      { frequency: 783.99, duration: 0.13, volume: 0.1, waveform: "sine", delay: 0.08 },
+    ],
+    win: [
+      { frequency: 523.25, duration: 0.18, volume: 0.14, waveform: "triangle" },
+      { frequency: 659.25, duration: 0.18, volume: 0.14, waveform: "triangle", delay: 0.12 },
+      { frequency: 783.99, duration: 0.18, volume: 0.14, waveform: "triangle", delay: 0.24 },
+      { frequency: 1046.5, duration: 0.42, volume: 0.15, waveform: "triangle", delay: 0.36 },
+    ],
+    loss: [
+      { frequency: 392, endFrequency: 329.63, duration: 0.17, volume: 0.13, waveform: "triangle" },
+      { frequency: 329.63, endFrequency: 261.63, duration: 0.2, volume: 0.12, waveform: "triangle", delay: 0.14 },
+      { frequency: 261.63, endFrequency: 196, duration: 0.3, volume: 0.12, waveform: "triangle", delay: 0.3 },
+    ],
+  };
+  const audioContextConstructor = window.AudioContext || window.webkitAudioContext;
 
   const boardElement = document.querySelector("#board");
   const boardWrap = document.querySelector("#board-wrap");
@@ -36,6 +70,7 @@
   const resumeButton = document.querySelector("#resume-game");
   const hintButton = document.querySelector("#hint-button");
   const hintCount = document.querySelector("#hint-count");
+  const soundToggle = document.querySelector("#sound-toggle");
   const hintConfirmDialog = document.querySelector("#hint-confirm-dialog");
   const confirmHintButton = document.querySelector("#confirm-hint");
   const cancelHintButton = document.querySelector("#cancel-hint");
@@ -62,6 +97,20 @@
   const recordCache = {};
   let recordsLoaded = false;
   let pendingScore = null;
+  let soundEnabled = true;
+  let audioContext = null;
+  let musicBus = null;
+  let effectsBus = null;
+  let musicInterval = null;
+  let musicStepIndex = 0;
+  let musicStartedForGame = false;
+
+  try {
+    soundEnabled = window.localStorage.getItem(SOUND_PREFERENCE_KEY) !== "false";
+  } catch {
+    soundEnabled = true;
+  }
+  if (!audioContextConstructor) soundEnabled = false;
 
   const state = {
     rows: PRESETS.beginner.rows,
@@ -79,6 +128,120 @@
     hintsUsed: 0,
     focusIndex: 0,
   };
+
+  function updateSoundControl() {
+    if (!audioContextConstructor) {
+      soundToggle.disabled = true;
+      soundToggle.setAttribute("aria-pressed", "false");
+      soundToggle.setAttribute("aria-label", "Audio is not available in this browser");
+      soundToggle.title = "Audio is not available in this browser";
+      return;
+    }
+    const isOn = soundEnabled;
+    soundToggle.disabled = false;
+    soundToggle.setAttribute("aria-pressed", String(isOn));
+    soundToggle.setAttribute("aria-label", isOn ? "Turn music and sound effects off" : "Turn music and sound effects on");
+    soundToggle.title = isOn ? "Music and sound effects are on" : "Music and sound effects are off";
+  }
+
+  function saveSoundPreference() {
+    try {
+      window.localStorage.setItem(SOUND_PREFERENCE_KEY, String(soundEnabled));
+    } catch {
+      // Audio preferences are optional when storage is unavailable.
+    }
+  }
+
+  function ensureAudioContext() {
+    if (!soundEnabled || !audioContextConstructor) return null;
+    if (!audioContext) {
+      audioContext = new audioContextConstructor();
+      musicBus = audioContext.createGain();
+      musicBus.gain.value = 0.42;
+      musicBus.connect(audioContext.destination);
+      effectsBus = audioContext.createGain();
+      effectsBus.gain.value = 0.68;
+      effectsBus.connect(audioContext.destination);
+    }
+    if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+    return audioContext;
+  }
+
+  function setBusGain(bus, value) {
+    if (!audioContext || !bus) return;
+    bus.gain.cancelScheduledValues(audioContext.currentTime);
+    bus.gain.setTargetAtTime(value, audioContext.currentTime, 0.035);
+  }
+
+  function playTone(frequency, duration, volume, bus, when, waveform = "sine", endFrequency = frequency) {
+    if (!audioContext || !bus) return;
+    const oscillator = audioContext.createOscillator();
+    const envelope = audioContext.createGain();
+    oscillator.type = waveform;
+    oscillator.frequency.setValueAtTime(frequency, when);
+    if (endFrequency !== frequency) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, when + duration);
+    envelope.gain.setValueAtTime(0.0001, when);
+    envelope.gain.exponentialRampToValueAtTime(volume, when + Math.min(0.015, duration / 3));
+    envelope.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    oscillator.connect(envelope);
+    envelope.connect(bus);
+    oscillator.start(when);
+    oscillator.stop(when + duration + 0.025);
+  }
+
+  function playSoundEffect(name) {
+    const context = ensureAudioContext();
+    const pattern = SOUND_EFFECTS[name];
+    if (!context || !pattern) return;
+    const startAt = context.currentTime + 0.02;
+    for (const note of pattern) {
+      playTone(note.frequency, note.duration, note.volume, effectsBus, startAt + (note.delay || 0), note.waveform, note.endFrequency || note.frequency);
+    }
+  }
+
+  function scheduleMusicStep() {
+    if (!audioContext || !musicBus || !soundEnabled || !musicStartedForGame || state.status !== "playing") return;
+    const when = audioContext.currentTime + 0.025;
+    const note = MUSIC_MELODY[musicStepIndex];
+    if (note) playTone(note, 0.2, 0.19, musicBus, when, "triangle");
+    if (musicStepIndex % 8 === 0) {
+      const root = MUSIC_ROOTS[Math.floor(musicStepIndex / 8)];
+      playTone(root, 0.52, 0.16, musicBus, when, "sine");
+      playTone(root * 1.5, 0.38, 0.055, musicBus, when + 0.035, "sine");
+    } else if (musicStepIndex % 8 === 4) {
+      playTone(MUSIC_ROOTS[Math.floor(musicStepIndex / 8)], 0.32, 0.1, musicBus, when, "sine");
+    }
+    musicStepIndex = (musicStepIndex + 1) % MUSIC_MELODY.length;
+  }
+
+  function startMusicLoop() {
+    if (!soundEnabled || !musicStartedForGame || state.status !== "playing" || musicInterval !== null) return;
+    const context = ensureAudioContext();
+    if (!context) return;
+    setBusGain(musicBus, 0.42);
+    scheduleMusicStep();
+    musicInterval = window.setInterval(scheduleMusicStep, MUSIC_STEP_SECONDS * 1000);
+  }
+
+  function stopMusicLoop() {
+    if (musicInterval !== null) window.clearInterval(musicInterval);
+    musicInterval = null;
+    setBusGain(musicBus, 0.0001);
+  }
+
+  function toggleSound() {
+    soundEnabled = !soundEnabled;
+    saveSoundPreference();
+    updateSoundControl();
+    if (!soundEnabled) {
+      stopMusicLoop();
+      setBusGain(effectsBus, 0.0001);
+      return;
+    }
+    if (!ensureAudioContext()) return;
+    setBusGain(effectsBus, 0.68);
+    startMusicLoop();
+  }
 
   function cellTemplate() {
     return { mine: false, adjacent: 0, revealed: false, flagged: false, exploded: false };
@@ -493,8 +656,10 @@
 
   function pauseGame() {
     if (state.status !== "playing") return;
+    playSoundEffect("pause");
     state.status = "paused";
     stopTimer();
+    stopMusicLoop();
     pauseDialog.showModal();
     resumeButton.focus();
   }
@@ -504,6 +669,8 @@
     pauseDialog.close();
     state.status = "playing";
     startTimer();
+    startMusicLoop();
+    playSoundEffect("resume");
     updateCounters();
     pauseButton.focus();
   }
@@ -530,6 +697,7 @@
       quarter: "Marked 1/4. It counts as a quarter of a mine and can be uncovered by a chord.",
     };
     message.textContent = flagMessages[cell.flagged] || "Flag removed.";
+    playSoundEffect(cell.flagged ? "mark" : "unmark");
   }
 
   function useHint() {
@@ -545,6 +713,7 @@
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
     message.textContent = "Hint used: one remaining mine was flagged. This run no longer qualifies for high scores.";
+    playSoundEffect("hint");
   }
 
   function requestHint() {
@@ -587,6 +756,8 @@
   function finishGame(result, explodedIndex = null) {
     state.status = result;
     stopTimer();
+    stopMusicLoop();
+    playSoundEffect(result === "won" ? "win" : "loss");
     let shouldEnterScore = false;
     if (result === "won") {
       for (const cell of state.cells) if (cell.mine) cell.flagged = "certain";
@@ -620,6 +791,8 @@
     if (!state.generated) {
       generateField(index);
       state.status = "playing";
+      musicStartedForGame = true;
+      startMusicLoop();
       startTimer();
     }
     setFace("shock");
@@ -629,6 +802,7 @@
       const revealed = state.cells.filter((item) => item.revealed).length;
       message.textContent = revealed > 1 ? `${revealed} squares clear. Keep going.` : "Good start. Read the numbers around you.";
       renderBoard(boardElement.contains(document.activeElement));
+      playSoundEffect("reveal");
     }
   }
 
@@ -642,11 +816,15 @@
     if (state.status === "playing") {
       message.textContent = "Neighbors checked. Keep going.";
       renderBoard(boardElement.contains(document.activeElement));
+      playSoundEffect("reveal");
     }
   }
 
   function newGame(config = null, mode = state.mode, customKey = state.customKey) {
     const focusWasInBoard = boardElement.contains(document.activeElement);
+    stopMusicLoop();
+    musicStartedForGame = false;
+    musicStepIndex = 0;
     const next = config || (mode === "custom"
       ? { rows: state.rows, cols: state.cols, mines: state.mineTotal }
       : PRESETS[mode] || PRESETS.beginner);
@@ -731,6 +909,7 @@
   faceButton.addEventListener("click", () => newGame());
   pauseButton.addEventListener("click", pauseGame);
   resumeButton.addEventListener("click", resumeGame);
+  soundToggle.addEventListener("click", toggleSound);
   hintButton.addEventListener("click", requestHint);
   hintConfirmDialog.addEventListener("cancel", () => {
     message.textContent = "Hint canceled. This game is still eligible for high scores.";
@@ -827,7 +1006,12 @@
     }
   });
 
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopMusicLoop();
+    else if (state.status === "playing" && musicStartedForGame) startMusicLoop();
+  });
   window.addEventListener("resize", sizeBoardCells);
 
+  updateSoundControl();
   newGame(PRESETS.beginner, "beginner", "");
 })();
