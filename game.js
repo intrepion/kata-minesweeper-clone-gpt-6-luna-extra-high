@@ -20,6 +20,9 @@
   const difficultySelect = document.querySelector("#difficulty-select");
   const bestLabel = document.querySelector("#best-label");
   const bestTime = document.querySelector("#best-time");
+  const pauseButton = document.querySelector("#pause-button");
+  const pauseDialog = document.querySelector("#pause-dialog");
+  const resumeButton = document.querySelector("#resume-game");
   const hintButton = document.querySelector("#hint-button");
   const hintCount = document.querySelector("#hint-count");
   const scoreboardButton = document.querySelector("#open-scoreboard");
@@ -161,7 +164,25 @@
     mineCounter.textContent = formatCounter(remainingTwelfths);
     mineCounter.setAttribute("aria-label", `${formatCounter(remainingTwelfths)} mines remaining`);
     timerOutput.textContent = formatTime(state.elapsed);
+    updatePauseControl();
     updateHintControl();
+  }
+
+  function updatePauseControl() {
+    pauseButton.disabled = state.status !== "playing";
+    if (state.status === "ready") {
+      pauseButton.setAttribute("aria-label", "Pause available after your first reveal");
+      pauseButton.title = "Pause is available after your first reveal";
+    } else if (state.status === "playing") {
+      pauseButton.setAttribute("aria-label", "Pause timer and hide the game");
+      pauseButton.title = "Pause timer and hide the game";
+    } else if (state.status === "paused") {
+      pauseButton.setAttribute("aria-label", "Game paused");
+      pauseButton.title = "Game paused";
+    } else {
+      pauseButton.setAttribute("aria-label", "Pause unavailable after the game ends");
+      pauseButton.title = "Start a new game to pause it";
+    }
   }
 
   function updateHintControl() {
@@ -383,7 +404,7 @@
 
   function startTimer() {
     if (state.startedAt !== null) return;
-    state.startedAt = Date.now();
+    state.startedAt = Date.now() - state.elapsed * 1000;
     state.timerId = window.setInterval(() => {
       if (state.status !== "playing" || state.startedAt === null) return;
       state.elapsed = Math.min(Math.floor((Date.now() - state.startedAt) / 1000), MAX_TIME_SECONDS);
@@ -401,6 +422,23 @@
     if (state.startedAt !== null) state.elapsed = Math.min(Math.floor((Date.now() - state.startedAt) / 1000), MAX_TIME_SECONDS);
     state.startedAt = null;
     updateCounters();
+  }
+
+  function pauseGame() {
+    if (state.status !== "playing") return;
+    state.status = "paused";
+    stopTimer();
+    pauseDialog.showModal();
+    resumeButton.focus();
+  }
+
+  function resumeGame() {
+    if (state.status !== "paused") return;
+    pauseDialog.close();
+    state.status = "playing";
+    startTimer();
+    updateCounters();
+    pauseButton.focus();
   }
 
   function cycleFlag(index) {
@@ -618,6 +656,9 @@
 
   document.querySelector("#new-game").addEventListener("click", () => newGame());
   faceButton.addEventListener("click", () => newGame());
+  pauseButton.addEventListener("click", pauseGame);
+  resumeButton.addEventListener("click", resumeGame);
+  pauseDialog.addEventListener("cancel", (event) => event.preventDefault());
   hintButton.addEventListener("click", useHint);
   flagModeButton.addEventListener("click", () => {
     state.flagMode = !state.flagMode;
@@ -686,7 +727,7 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    const dialogOpen = customDialog.open || scoresDialog.open || scoreEntryDialog.open;
+    const dialogOpen = customDialog.open || scoresDialog.open || scoreEntryDialog.open || pauseDialog.open;
     if (event.key.toLowerCase() === "r" && !dialogOpen && !event.target.matches("input, select, textarea")) {
       newGame();
     }

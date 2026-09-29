@@ -54,6 +54,10 @@
             <span>New game</span>
             <kbd>R</kbd>
           </button>
+          <button class="pause-button" id="pause-button" type="button" aria-label="Pause timer and hide the game" title="Pause timer and hide the game" disabled>
+            <span class="pause-glyph" aria-hidden="true">Ⅱ</span>
+            <span>Pause</span>
+          </button>
         </div>
 
         <div class="game-console">
@@ -107,6 +111,13 @@
         <p class="tiny-credits">A familiar game, made for a slower moment. <span>✳</span></p>
       </section>
     </main>
+
+    <dialog class="pause-dialog" id="pause-dialog" aria-labelledby="pause-title">
+      <p class="pause-eyebrow">FIELD NOTES</p>
+      <h2 id="pause-title">Paused</h2>
+      <p class="pause-copy">The timer is stopped and the field is hidden.</p>
+      <button class="pause-resume" id="resume-game" type="button">Resume game</button>
+    </dialog>
 
     <dialog class="custom-dialog" id="custom-dialog" aria-labelledby="custom-title">
       <form id="custom-form">
