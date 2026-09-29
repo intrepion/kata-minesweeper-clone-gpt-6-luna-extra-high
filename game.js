@@ -36,6 +36,9 @@
   const resumeButton = document.querySelector("#resume-game");
   const hintButton = document.querySelector("#hint-button");
   const hintCount = document.querySelector("#hint-count");
+  const hintConfirmDialog = document.querySelector("#hint-confirm-dialog");
+  const confirmHintButton = document.querySelector("#confirm-hint");
+  const cancelHintButton = document.querySelector("#cancel-hint");
   const scoreboardButton = document.querySelector("#open-scoreboard");
   const scoresDialog = document.querySelector("#scores-dialog");
   const scoreTabs = document.querySelector("#score-tabs");
@@ -534,6 +537,15 @@
     message.textContent = "Hint used: one remaining mine was flagged. This run no longer qualifies for high scores.";
   }
 
+  function requestHint() {
+    if (hintButton.disabled) return;
+    if (state.hintsUsed > 0) {
+      useHint();
+      return;
+    }
+    hintConfirmDialog.showModal();
+  }
+
   function revealCells(indices) {
     const stack = [...indices];
     const visited = new Set();
@@ -710,7 +722,18 @@
   pauseButton.addEventListener("click", pauseGame);
   resumeButton.addEventListener("click", resumeGame);
   pauseDialog.addEventListener("cancel", (event) => event.preventDefault());
-  hintButton.addEventListener("click", useHint);
+  hintButton.addEventListener("click", requestHint);
+  hintConfirmDialog.addEventListener("cancel", () => {
+    message.textContent = "Hint canceled. This game is still eligible for high scores.";
+  });
+  cancelHintButton.addEventListener("click", () => {
+    hintConfirmDialog.close();
+    message.textContent = "Hint canceled. This game is still eligible for high scores.";
+  });
+  confirmHintButton.addEventListener("click", () => {
+    hintConfirmDialog.close();
+    useHint();
+  });
   flagModeButton.addEventListener("click", () => {
     state.flagMode = !state.flagMode;
     flagModeButton.setAttribute("aria-pressed", String(state.flagMode));
@@ -778,7 +801,7 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    const dialogOpen = customDialog.open || scoresDialog.open || scoreEntryDialog.open || pauseDialog.open;
+    const dialogOpen = customDialog.open || scoresDialog.open || scoreEntryDialog.open || pauseDialog.open || hintConfirmDialog.open;
     if (event.key.toLowerCase() === "r" && !dialogOpen && !event.target.matches("input, select, textarea")) {
       newGame();
     }
