@@ -11,7 +11,7 @@ A small, dependency-free hidden-mine logic game that runs in a browser. Open `in
 - The timer starts on the first reveal and counts up to 9,999 seconds.
 - During a game, choose **Pause** to stop the timer and hide the full screen until you resume.
 - Use the arrow keys to move around the board. Click a revealed numbered square after flagging its neighbors to uncover the remaining neighbors together.
-- If certain flags outnumber a revealed neighbor number, a warning appears and outlines that number. Fraction notes are not counted as flags.
+- A warning outlines any revealed numbered cell whose certain-flag count differs from the number shown, whether too high or too low. Fraction notes are not counted as flags.
 - Press **R** or use the face button to start a fresh field. The top three named, unassisted times and their local date/time (to the second) are saved for each preset difficulty; custom board dimensions keep separate tables.
 
 There is no build step and no server-side code.

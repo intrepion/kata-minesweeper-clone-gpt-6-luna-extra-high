@@ -371,50 +371,32 @@
     return cell.adjacent ? `${location}, ${cell.adjacent} adjacent ${cell.adjacent === 1 ? "mine" : "mines"}` : `${location}, empty`;
   }
 
-  function overflaggedNumbers() {
-    const warnings = new Map();
-    if (state.status !== "playing") return warnings;
+  function flagCountMismatches() {
+    const mismatches = new Map();
+    if (state.status !== "playing") return mismatches;
     state.cells.forEach((cell, index) => {
       if (!cell.revealed || cell.adjacent === 0) return;
       const certainFlags = neighborsOf(index).filter((neighbor) => state.cells[neighbor].flagged === "certain").length;
-      if (certainFlags > cell.adjacent) warnings.set(index, certainFlags);
+      if (certainFlags !== cell.adjacent) mismatches.set(index, certainFlags);
     });
-    return warnings;
-  }
-
-  function countMatchedNumbers() {
-    const matches = new Map();
-    if (state.status !== "playing") return matches;
-    state.cells.forEach((cell, index) => {
-      if (!cell.revealed || cell.adjacent === 0) return;
-      const certainFlags = neighborsOf(index).filter((neighbor) => state.cells[neighbor].flagged === "certain").length;
-      if (certainFlags === cell.adjacent) matches.set(index, certainFlags);
-    });
-    return matches;
+    return mismatches;
   }
 
   function renderBoard(restoreFocus = false) {
-    const warnings = overflaggedNumbers();
-    const matches = countMatchedNumbers();
-    flagWarning.hidden = warnings.size === 0;
-    if (warnings.size === 1) {
-      flagWarning.textContent = "Too many flags";
-      flagWarning.setAttribute("aria-label", "Too many certain flags surround the outlined number. Fraction notes don't count.");
-    } else if (warnings.size > 1) {
-      flagWarning.textContent = `${warnings.size} over-flagged numbers`;
-      flagWarning.setAttribute("aria-label", `${warnings.size} outlined numbers have too many certain flags nearby. Fraction notes don't count.`);
-    } else if (matches.size > 0) {
-      const numberLabel = matches.size === 1 ? "number" : "numbers";
-      flagWarning.hidden = false;
-      flagWarning.textContent = `Flag count matches: ${matches.size}`;
-      flagWarning.setAttribute("aria-label", `Certain flag counts match the adjacent numbers on ${matches.size} ${numberLabel}. Matching counts do not confirm the flags are on mines.`);
+    const mismatches = flagCountMismatches();
+    flagWarning.hidden = mismatches.size === 0;
+    if (mismatches.size === 1) {
+      flagWarning.textContent = "Flag count mismatch";
+      flagWarning.setAttribute("aria-label", "One revealed number has a certain flag count that does not match its value. Fraction notes don't count.");
+    } else if (mismatches.size > 1) {
+      flagWarning.textContent = `${mismatches.size} flag count mismatches`;
+      flagWarning.setAttribute("aria-label", `${mismatches.size} revealed numbers have certain flag counts that do not match their values. Fraction notes don't count.`);
     } else {
       flagWarning.textContent = "";
       flagWarning.removeAttribute("aria-label");
     }
-    flagWarning.classList.toggle("is-count-matched", warnings.size === 0 && matches.size > 0);
     flagWarning.title = flagWarning.getAttribute("aria-label") || "";
-    boardCoordinate.hidden = warnings.size > 0;
+    boardCoordinate.hidden = mismatches.size > 0;
     const fragment = document.createDocumentFragment();
     for (let rowIndex = 0; rowIndex < state.rows; rowIndex += 1) {
       const row = document.createElement("div");
@@ -428,19 +410,15 @@
         button.className = "cell";
         button.dataset.index = String(index);
         button.setAttribute("role", "gridcell");
-        const warningFlags = warnings.get(index);
-        const matchingFlags = matches.get(index);
+        const mismatchFlags = mismatches.get(index);
         const label = cellLabel(cell, index);
-        button.setAttribute("aria-label", warningFlags
-          ? `${label}, warning: ${warningFlags} certain flags nearby, number is ${cell.adjacent}`
-          : matchingFlags !== undefined
-            ? `${label}, the number of certain flags nearby matches ${cell.adjacent}; this does not confirm the flags are on mines`
-            : label);
+        button.setAttribute("aria-label", mismatchFlags !== undefined
+          ? `${label}, flag count mismatch: ${mismatchFlags} certain flags nearby, number is ${cell.adjacent}`
+          : label);
         button.setAttribute("aria-pressed", String(Boolean(cell.flagged)));
         button.tabIndex = index === state.focusIndex ? 0 : -1;
         if (cell.revealed) button.classList.add("is-revealed");
-        if (warningFlags) button.classList.add("is-overflagged-warning");
-        if (matchingFlags !== undefined) button.classList.add("is-count-matched");
+        if (mismatchFlags !== undefined) button.classList.add("is-flag-count-mismatch");
         if (cell.flagged) button.classList.add("is-flagged");
         if (cell.flagged === "chance") button.classList.add("is-chance-flag");
         if (cell.flagged === "third") button.classList.add("is-third-flag");
