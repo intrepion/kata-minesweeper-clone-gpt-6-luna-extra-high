@@ -12,6 +12,6 @@ A small, dependency-free hidden-mine logic game that runs in a browser. Open `in
 - During a game, choose **Pause** to stop the timer and hide the full screen until you resume.
 - Use the arrow keys to move around the board. Click a revealed numbered square after flagging its neighbors to uncover the remaining neighbors together.
 - If certain flags outnumber a revealed neighbor number, a warning appears and outlines that number. Fraction notes are not counted as flags.
-- Press **R** or use the face button to start a fresh field. The top three named, unassisted times are saved locally for each preset difficulty; custom board dimensions keep separate tables.
+- Press **R** or use the face button to start a fresh field. The top three named, unassisted times and their local date/time (to the second) are saved for each preset difficulty; custom board dimensions keep separate tables.
 
 There is no build step and no server-side code.

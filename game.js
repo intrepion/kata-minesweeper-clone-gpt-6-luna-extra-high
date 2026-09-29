@@ -7,6 +7,15 @@
     expert: { rows: 16, cols: 30, mines: 99, label: "expert" },
   };
   const MAX_TIME_SECONDS = 9999;
+  const SCORE_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
   const FLAG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3m1 1h12l-3.2 4 3.2 4H7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="3" r="1.7" fill="currentColor"/></svg>';
   const PROBABILITY_MARKS = { chance: "½", third: "⅓", quarter: "¼" };
   const MINE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2v3m0 13.6v3M2.2 12h3m13.6 0h3M5.08 5.08l2.12 2.12m9.6 9.6 2.12 2.12m0-13.84L16.8 7.2m-9.6 9.6-2.12 2.12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="5.1" fill="currentColor"/><circle cx="10.3" cy="10.3" r="1.2" fill="#fffefa"/></svg>';
@@ -242,9 +251,16 @@
     const stored = readRecords()[key];
     const table = Array.isArray(stored)
       ? stored.filter((entry) => entry && typeof entry.name === "string" && Number.isInteger(entry.time) && entry.time >= 0)
-        .map((entry) => ({ name: entry.name.slice(0, 14), time: entry.time }))
+        .map((entry) => {
+          const validTimestamp = typeof entry.recordedAt === "string" && Number.isFinite(Date.parse(entry.recordedAt));
+          return {
+            name: entry.name.slice(0, 14),
+            time: entry.time,
+            recordedAt: validTimestamp ? new Date(entry.recordedAt).toISOString() : null,
+          };
+        })
       : Number.isInteger(stored) && stored >= 0
-        ? [{ name: "PLAYER", time: stored }]
+        ? [{ name: "PLAYER", time: stored, recordedAt: null }]
         : [];
     return table.sort((left, right) => left.time - right.time).slice(0, 3);
   }
@@ -254,10 +270,10 @@
     return table.length < 3 || time < table[table.length - 1].time;
   }
 
-  function saveHighScore(name, time, key) {
+  function saveHighScore(name, time, key, recordedAt) {
     const records = readRecords();
     const table = scoreTableFor(key);
-    table.push({ name: name.trim().slice(0, 14) || "PLAYER", time });
+    table.push({ name: name.trim().slice(0, 14) || "PLAYER", time, recordedAt });
     table.sort((left, right) => left.time - right.time);
     records[key] = table.slice(0, 3);
     try {
@@ -294,10 +310,20 @@
       const rankCell = document.createElement("td");
       const nameCell = document.createElement("td");
       const timeCell = document.createElement("td");
+      const recordedAtCell = document.createElement("td");
       rankCell.textContent = String(rank + 1).padStart(2, "0");
       nameCell.textContent = score?.name || "—";
       timeCell.textContent = score ? formatTime(score.time) : "— — —";
-      row.append(rankCell, nameCell, timeCell);
+      if (score?.recordedAt) {
+        const timestamp = document.createElement("time");
+        timestamp.dateTime = score.recordedAt;
+        timestamp.textContent = SCORE_DATE_FORMATTER.format(new Date(score.recordedAt));
+        recordedAtCell.append(timestamp);
+      } else {
+        recordedAtCell.textContent = "—";
+        if (score) recordedAtCell.title = "Date unavailable for this saved score";
+      }
+      row.append(rankCell, nameCell, timeCell, recordedAtCell);
       fragment.append(row);
     }
     scoreTableBody.replaceChildren(fragment);
@@ -309,7 +335,7 @@
   }
 
   function openScoreEntry() {
-    pendingScore = { key: storageKey(), mode: state.mode, time: state.elapsed };
+    pendingScore = { key: storageKey(), mode: state.mode, time: state.elapsed, recordedAt: new Date().toISOString() };
     const label = state.mode === "custom" ? `${state.rows} × ${state.cols} custom` : state.mode;
     scoreEntryCopy.textContent = `${label} · ${formatTime(state.elapsed)} seconds. Add your name to the top-three table.`;
     scoreNameInput.value = "";
@@ -325,7 +351,7 @@
     }
     const score = pendingScore;
     const name = scoreNameInput.value.trim().slice(0, 14) || "PLAYER";
-    saveHighScore(name, score.time, score.key);
+    saveHighScore(name, score.time, score.key, score.recordedAt);
     pendingScore = null;
     scoreEntryDialog.close();
     message.textContent = `${name}'s ${formatTime(score.time)} second time was added to the high score table.`;

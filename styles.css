@@ -166,11 +166,13 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .score-table-wrap { overflow-x: auto; border: 1px solid #e3e8df; border-radius: 7px; }
 .score-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .score-table th { padding: 9px 12px; background: #f4f6f0; color: #929b91; text-align: left; font: 500 8px var(--mono); letter-spacing: .1em; }
-.score-table th:last-child, .score-table td:last-child { text-align: right; }
+.score-table th:nth-child(3), .score-table td:nth-child(3), .score-table th:last-child, .score-table td:last-child { text-align: right; }
 .score-table td { padding: 11px 12px; border-top: 1px solid #edf0e9; color: #4e5c51; }
 .score-table td:first-child { width: 36px; color: #9aa596; font: 11px var(--mono); }
-.score-table td:last-child { color: var(--green); font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.score-table td:nth-child(3) { color: var(--green); font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.score-table td:last-child { color: #7d887d; font: 9px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .score-empty td { color: #a8b0a5; }
+.score-empty td:last-child { color: #a8b0a5; }
 .score-footnote { margin: 12px 0 0; color: #9aa399; font: 9px var(--mono); }
 .score-name-label { display: block; margin: 22px 0 7px; color: #788378; font: 500 9px var(--mono); letter-spacing: .08em; }
 .score-name-input { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #dce2d7; border-radius: 6px; outline-color: #89a36f; background: #fbfcf8; color: var(--ink); font: 600 15px var(--sans); }
