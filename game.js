@@ -187,8 +187,8 @@
       pauseButton.setAttribute("aria-label", "Pause available after your first reveal");
       pauseButton.title = "Pause is available after your first reveal";
     } else if (state.status === "playing") {
-      pauseButton.setAttribute("aria-label", "Pause timer and hide the game");
-      pauseButton.title = "Pause timer and hide the game";
+      pauseButton.setAttribute("aria-label", "Pause timer and hide the game. Press Escape to pause.");
+      pauseButton.title = "Pause timer and hide the game (Escape)";
     } else if (state.status === "paused") {
       pauseButton.setAttribute("aria-label", "Game paused");
       pauseButton.title = "Game paused";
@@ -731,7 +731,6 @@
   faceButton.addEventListener("click", () => newGame());
   pauseButton.addEventListener("click", pauseGame);
   resumeButton.addEventListener("click", resumeGame);
-  pauseDialog.addEventListener("cancel", (event) => event.preventDefault());
   hintButton.addEventListener("click", requestHint);
   hintConfirmDialog.addEventListener("cancel", () => {
     message.textContent = "Hint canceled. This game is still eligible for high scores.";
@@ -815,7 +814,17 @@
     if (event.key.toLowerCase() === "r" && !dialogOpen && !event.target.matches("input, select, textarea")) {
       newGame();
     }
-    if (event.key === "Escape" && customDialog.open) closeCustomDialog();
+    if (event.key !== "Escape" || event.repeat) return;
+    if (pauseDialog.open) {
+      event.preventDefault();
+      resumeGame();
+    } else if (customDialog.open) {
+      event.preventDefault();
+      closeCustomDialog();
+    } else if (!scoresDialog.open && !scoreEntryDialog.open && !hintConfirmDialog.open && state.status === "playing" && !event.target.matches("input, select, textarea")) {
+      event.preventDefault();
+      pauseGame();
+    }
   });
 
   window.addEventListener("resize", sizeBoardCells);
