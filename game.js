@@ -13,6 +13,7 @@
 
   const boardElement = document.querySelector("#board");
   const boardWrap = document.querySelector("#board-wrap");
+  const flagWarning = document.querySelector("#flag-warning");
   const mineCounter = document.querySelector("#mine-counter");
   const timerOutput = document.querySelector("#timer");
   const highScoreOutput = document.querySelector("#high-score");
@@ -343,7 +344,27 @@
     return cell.adjacent ? `${location}, ${cell.adjacent} adjacent ${cell.adjacent === 1 ? "mine" : "mines"}` : `${location}, empty`;
   }
 
+  function overflaggedNumbers() {
+    const warnings = new Map();
+    if (state.status !== "playing") return warnings;
+    state.cells.forEach((cell, index) => {
+      if (!cell.revealed || cell.adjacent === 0) return;
+      const certainFlags = neighborsOf(index).filter((neighbor) => state.cells[neighbor].flagged === "certain").length;
+      if (certainFlags > cell.adjacent) warnings.set(index, certainFlags);
+    });
+    return warnings;
+  }
+
   function renderBoard(restoreFocus = false) {
+    const warnings = overflaggedNumbers();
+    flagWarning.hidden = warnings.size === 0;
+    if (warnings.size === 1) {
+      flagWarning.textContent = "Too many certain flags surround the outlined number. Fraction notes don't count.";
+    } else if (warnings.size > 1) {
+      flagWarning.textContent = `${warnings.size} outlined numbers have too many certain flags nearby. Fraction notes don't count.`;
+    } else {
+      flagWarning.textContent = "";
+    }
     const fragment = document.createDocumentFragment();
     for (let rowIndex = 0; rowIndex < state.rows; rowIndex += 1) {
       const row = document.createElement("div");
@@ -357,10 +378,15 @@
         button.className = "cell";
         button.dataset.index = String(index);
         button.setAttribute("role", "gridcell");
-        button.setAttribute("aria-label", cellLabel(cell, index));
+        const warningFlags = warnings.get(index);
+        const label = cellLabel(cell, index);
+        button.setAttribute("aria-label", warningFlags
+          ? `${label}, warning: ${warningFlags} certain flags nearby, number is ${cell.adjacent}`
+          : label);
         button.setAttribute("aria-pressed", String(Boolean(cell.flagged)));
         button.tabIndex = index === state.focusIndex ? 0 : -1;
         if (cell.revealed) button.classList.add("is-revealed");
+        if (warningFlags) button.classList.add("is-overflagged-warning");
         if (cell.flagged) button.classList.add("is-flagged");
         if (cell.flagged === "chance") button.classList.add("is-chance-flag");
         if (cell.flagged === "third") button.classList.add("is-third-flag");

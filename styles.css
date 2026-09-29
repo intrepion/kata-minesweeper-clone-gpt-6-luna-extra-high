@@ -85,6 +85,9 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .flag-mode svg { width: 15px; height: 15px; }
 .flag-mode b { color: #546258; font-weight: 600; }
 .flag-mode[aria-pressed="true"] { border-color: #d4dfb8; background: #f2f7e5; color: var(--green); }
+.flag-warning { display: flex; align-items: center; gap: 8px; min-height: 34px; margin: 0 0 8px; padding: 7px 10px; border: 1px solid #ecd6a6; border-radius: 6px; background: #fff8e6; color: #806225; font-size: 10px; line-height: 1.4; }
+.flag-warning::before { content: "!"; flex: 0 0 17px; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%; background: #f0dfb6; color: #806225; font: 700 11px var(--sans); }
+.flag-warning[hidden] { display: none; }
 .board-wrap { max-width: 100%; overflow: auto; overscroll-behavior-x: contain; padding: 10px; border: 1px solid #d9ded2; border-radius: 8px; background: #e7ebe2; scrollbar-color: #adb8a8 #e7ebe2; scrollbar-width: thin; }
 .board { --cell-size: 35px; display: grid; width: max-content; gap: 2px; user-select: none; touch-action: manipulation; }
 .board-row { display: contents; }
@@ -108,6 +111,7 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
   box-shadow: 0 0 0 1px #fffefa, inset 0 0 0 1px #fbe6e0;
   color: #963d32;
 }
+.cell.is-overflagged-warning { border: 2px solid #c18831; background: #fff0c7; box-shadow: 0 0 0 1px #fffefa, inset 0 0 0 1px #ffe0a0; }
 .cell.is-exploded { border-color: #d96e59; background: #ee8167; }
 .cell.is-revealed.is-mine { border-color: #ecc2b6; background: #f4ded7; }
 .cell.is-revealed.is-mine.is-exploded { border-color: #d96e59; background: #ee8167; }
