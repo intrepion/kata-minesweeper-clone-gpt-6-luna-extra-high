@@ -199,8 +199,8 @@
   }
 
   function updateHintControl() {
-    const remainingTargets = state.cells.filter((cell) => cell.mine && !cell.revealed && cell.flagged !== "certain").length;
-    const canUseHint = state.status === "playing" && state.generated && remainingTargets > 0;
+    const availableTargets = hintCandidates().length;
+    const canUseHint = state.status === "playing" && state.generated && availableTargets > 0;
     hintButton.disabled = !canUseHint;
     hintCount.textContent = "∞";
 
@@ -210,12 +210,12 @@
     } else if (state.status !== "playing") {
       hintButton.setAttribute("aria-label", "Hints unavailable after the game ends");
       hintButton.title = "Start a new game to use more hints";
-    } else if (remainingTargets === 0) {
-      hintButton.setAttribute("aria-label", "No unflagged mines remain to hint");
-      hintButton.title = "All remaining mines are already certainly flagged";
+    } else if (availableTargets === 0) {
+      hintButton.setAttribute("aria-label", "No unflagged mine is next to a number with a mismatched flag count");
+      hintButton.title = "A hint needs an unflagged mine next to a revealed number whose certain-flag count does not match its value.";
     } else {
-      hintButton.setAttribute("aria-label", "Use a hint. This game will no longer qualify for high scores.");
-      hintButton.title = "Place a certain flag on one random remaining mine. Using a hint disqualifies this game from high scores.";
+      hintButton.setAttribute("aria-label", "Use a hint on an unflagged mine next to a number with a mismatched flag count. This game will no longer qualify for high scores.");
+      hintButton.title = "Place a certain flag on a random unflagged mine next to a number with a mismatched flag count. Using a hint disqualifies this game from high scores.";
     }
   }
 
@@ -381,6 +381,16 @@
     return mismatches;
   }
 
+  function hintCandidates() {
+    const mismatches = flagCountMismatches();
+    const candidates = [];
+    state.cells.forEach((cell, index) => {
+      if (!cell.mine || cell.revealed || cell.flagged === "certain") return;
+      if (neighborsOf(index).some((neighbor) => mismatches.has(neighbor))) candidates.push(cell);
+    });
+    return candidates;
+  }
+
   function renderBoard(restoreFocus = false) {
     const mismatches = flagCountMismatches();
     flagWarning.hidden = mismatches.size === 0;
@@ -524,7 +534,7 @@
 
   function useHint() {
     if (hintButton.disabled) return;
-    const candidates = state.cells.filter((cell) => cell.mine && !cell.revealed && cell.flagged !== "certain");
+    const candidates = hintCandidates();
     if (candidates.length === 0) {
       updateHintControl();
       return;
