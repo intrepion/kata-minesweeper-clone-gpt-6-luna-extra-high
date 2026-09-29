@@ -79,7 +79,10 @@
         </div>
 
         <div class="board-heading">
-          <span class="board-coordinate"><span class="coordinate-line"></span> THE FIELD</span>
+          <div class="board-heading-status">
+            <span class="board-coordinate" id="board-coordinate"><span class="coordinate-line"></span> THE FIELD</span>
+            <p class="flag-warning" id="flag-warning" role="status" aria-live="polite" hidden></p>
+          </div>
           <div class="board-tools">
             <button class="hint-button" id="hint-button" type="button" aria-label="Use a hint; 3 available after your first reveal" title="Hints unlock after your first reveal" disabled>
               <span class="hint-spark" aria-hidden="true">✦</span>
@@ -92,7 +95,6 @@
           </div>
         </div>
 
-        <p class="flag-warning" id="flag-warning" role="status" aria-live="polite" hidden></p>
         <div class="board-wrap" id="board-wrap">
           <div class="board" id="board" role="grid" aria-label="Hidden Field board" aria-describedby="board-help"></div>
         </div>

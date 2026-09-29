@@ -13,6 +13,7 @@
 
   const boardElement = document.querySelector("#board");
   const boardWrap = document.querySelector("#board-wrap");
+  const boardCoordinate = document.querySelector("#board-coordinate");
   const flagWarning = document.querySelector("#flag-warning");
   const mineCounter = document.querySelector("#mine-counter");
   const timerOutput = document.querySelector("#timer");
@@ -359,12 +360,17 @@
     const warnings = overflaggedNumbers();
     flagWarning.hidden = warnings.size === 0;
     if (warnings.size === 1) {
-      flagWarning.textContent = "Too many certain flags surround the outlined number. Fraction notes don't count.";
+      flagWarning.textContent = "Too many flags";
+      flagWarning.setAttribute("aria-label", "Too many certain flags surround the outlined number. Fraction notes don't count.");
     } else if (warnings.size > 1) {
-      flagWarning.textContent = `${warnings.size} outlined numbers have too many certain flags nearby. Fraction notes don't count.`;
+      flagWarning.textContent = `${warnings.size} over-flagged numbers`;
+      flagWarning.setAttribute("aria-label", `${warnings.size} outlined numbers have too many certain flags nearby. Fraction notes don't count.`);
     } else {
       flagWarning.textContent = "";
+      flagWarning.removeAttribute("aria-label");
     }
+    flagWarning.title = flagWarning.getAttribute("aria-label") || "";
+    boardCoordinate.hidden = warnings.size > 0;
     const fragment = document.createDocumentFragment();
     for (let rowIndex = 0; rowIndex < state.rows; rowIndex += 1) {
       const row = document.createElement("div");

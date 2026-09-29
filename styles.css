@@ -73,7 +73,9 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .face-button:hover { background: #f2f6e8; transform: rotate(-8deg); }
 .face-icon { display: block; width: 35px; height: 35px; }
 .board-heading { height: 35px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.board-heading-status { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; }
 .board-coordinate { display: inline-flex; align-items: center; gap: 8px; color: #8e998f; font: 500 9px var(--mono); letter-spacing: .14em; }
+.board-coordinate[hidden] { display: none; }
 .coordinate-line { width: 17px; height: 1px; background: #b8c2ac; }
 .board-tools { display: inline-flex; align-items: center; gap: 2px; }
 .hint-button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #89938a; font-size: 10px; white-space: nowrap; cursor: pointer; }
@@ -85,7 +87,7 @@ kbd { padding: 2px 4px; border: 1px solid #e8ebe3; border-radius: 3px; color: #9
 .flag-mode svg { width: 15px; height: 15px; }
 .flag-mode b { color: #546258; font-weight: 600; }
 .flag-mode[aria-pressed="true"] { border-color: #d4dfb8; background: #f2f7e5; color: var(--green); }
-.flag-warning { display: flex; align-items: center; gap: 8px; min-height: 34px; margin: 0 0 8px; padding: 7px 10px; border: 1px solid #ecd6a6; border-radius: 6px; background: #fff8e6; color: #806225; font-size: 10px; line-height: 1.4; }
+.flag-warning { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; min-height: 27px; margin: 0; padding: 4px 7px; overflow: hidden; border: 1px solid #ecd6a6; border-radius: 6px; background: #fff8e6; color: #806225; font-size: 9px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .flag-warning::before { content: "!"; flex: 0 0 17px; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%; background: #f0dfb6; color: #806225; font: 700 11px var(--sans); }
 .flag-warning[hidden] { display: none; }
 .board-wrap { max-width: 100%; overflow: auto; overscroll-behavior-x: contain; padding: 10px; border: 1px solid #d9ded2; border-radius: 8px; background: #e7ebe2; scrollbar-color: #adb8a8 #e7ebe2; scrollbar-width: thin; }
