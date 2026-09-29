@@ -73,7 +73,6 @@
     elapsed: 0,
     timerId: null,
     flagMode: false,
-    hintsRemaining: 3,
     hintsUsed: 0,
     focusIndex: 0,
   };
@@ -198,16 +197,13 @@
 
   function updateHintControl() {
     const remainingTargets = state.cells.filter((cell) => cell.mine && !cell.revealed && cell.flagged !== "certain").length;
-    const canUseHint = state.status === "playing" && state.generated && state.hintsRemaining > 0 && remainingTargets > 0;
+    const canUseHint = state.status === "playing" && state.generated && remainingTargets > 0;
     hintButton.disabled = !canUseHint;
-    hintCount.textContent = String(state.hintsRemaining);
+    hintCount.textContent = "∞";
 
-    if (state.hintsRemaining === 0) {
-      hintButton.setAttribute("aria-label", "No hints remaining");
-      hintButton.title = "No hints remain in this game";
-    } else if (state.status === "ready" || !state.generated) {
-      hintButton.setAttribute("aria-label", `Use a hint; ${state.hintsRemaining} available after your first reveal`);
-      hintButton.title = "Hints unlock after your first reveal";
+    if (state.status === "ready" || !state.generated) {
+      hintButton.setAttribute("aria-label", "Use unlimited hints after your first reveal. Using a hint disqualifies this game from high scores.");
+      hintButton.title = "Hints unlock after your first reveal. Using one disqualifies this game from high scores.";
     } else if (state.status !== "playing") {
       hintButton.setAttribute("aria-label", "Hints unavailable after the game ends");
       hintButton.title = "Start a new game to use more hints";
@@ -215,8 +211,8 @@
       hintButton.setAttribute("aria-label", "No unflagged mines remain to hint");
       hintButton.title = "All remaining mines are already certainly flagged";
     } else {
-      hintButton.setAttribute("aria-label", `Use a hint; ${state.hintsRemaining} remaining`);
-      hintButton.title = "Place a certain flag on one random remaining mine";
+      hintButton.setAttribute("aria-label", "Use a hint. This game will no longer qualify for high scores.");
+      hintButton.title = "Place a certain flag on one random remaining mine. Using a hint disqualifies this game from high scores.";
     }
   }
 
@@ -532,12 +528,10 @@
     }
     const target = candidates[Math.floor(Math.random() * candidates.length)];
     target.flagged = "certain";
-    state.hintsRemaining -= 1;
     state.hintsUsed += 1;
     updateCounters();
     renderBoard(boardElement.contains(document.activeElement));
-    const remainingHints = state.hintsRemaining;
-    message.textContent = `Hint used: one remaining mine was flagged. ${remainingHints} ${remainingHints === 1 ? "hint" : "hints"} left.`;
+    message.textContent = "Hint used: one remaining mine was flagged. This run no longer qualifies for high scores.";
   }
 
   function revealCells(indices) {
@@ -643,7 +637,6 @@
     state.generated = false;
     state.startedAt = null;
     state.elapsed = 0;
-    state.hintsRemaining = 3;
     state.hintsUsed = 0;
     state.focusIndex = 0;
     if (state.timerId !== null) window.clearInterval(state.timerId);
