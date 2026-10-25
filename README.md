@@ -1,5 +1,9 @@
 # Field Notes — Hidden Field
 
+## Play online
+
+[Play Hidden Field](https://intrepion.github.io/kata-minesweeper-clone-gpt-6-luna-extra-high/) — free, playable in your browser.
+
 A small, dependency-free hidden-mine logic game that runs in a browser. Open `index.html` directly or serve this directory with any static file server.
 
 ## Play
