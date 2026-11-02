@@ -1,6 +1,47 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "gameId": "kata-minesweeper-clone-gpt-6-luna-extra-high",
   "playUrl": "https://intrepion.github.io/kata-minesweeper-clone-gpt-6-luna-extra-high/",
-  "screenshots": []
+  "screenshots": [
+    {
+      "path": "arcade/screenshots/ci-20261102-01.jpg",
+      "sha256": "49c7232c7bc14947a6f354595b92200a9291eefbed928b30ac55ddfac7fe9a49",
+      "alt": "Hidden Field gameplay, view 1",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-01.png",
+        "sourceSha256": "b69c4260cd07d90a658fea7e1a249b92ccfc3a08fe0ebb6de85fd12ee1e58a9d",
+        "captureCommit": "f0dd02dbc64383d4608415cb7de9250fdb671b9b",
+        "workflowRunId": "41378710888",
+        "inputHashes": {
+          "index.html": "4a17b4eba5255c738fe874af651ac950b95dd0d66c3bc7e787cf6b1ca82f81ed",
+          "styles.css": "ba03ffb4f0f922b8022eeff08efd49ae92104dfe3349d5c48e9cf1768354c3ce",
+          "game.js": "668499ee5e46d930048a54adf78f3de3e6bfb4c1ec75c5950b5badd8afc10c90"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "628029c674d20577bbaec363c32ba3356e705b91caa6d96b098bf3e7aa521ed9"
+      }
+    },
+    {
+      "path": "arcade/screenshots/ci-20261102-02.jpg",
+      "sha256": "2f30c937f662d81b1e9dab047d722ea1d11121b26061a984a8618aa26801a604",
+      "alt": "Hidden Field gameplay, view 2",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-02.png",
+        "sourceSha256": "102494693b17f8f7b14e9eb61ed4cd0d0385daf6af76796dda865713b1e306dd",
+        "captureCommit": "f0dd02dbc64383d4608415cb7de9250fdb671b9b",
+        "workflowRunId": "41378710888",
+        "inputHashes": {
+          "index.html": "4a17b4eba5255c738fe874af651ac950b95dd0d66c3bc7e787cf6b1ca82f81ed",
+          "styles.css": "ba03ffb4f0f922b8022eeff08efd49ae92104dfe3349d5c48e9cf1768354c3ce",
+          "game.js": "668499ee5e46d930048a54adf78f3de3e6bfb4c1ec75c5950b5badd8afc10c90"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "628029c674d20577bbaec363c32ba3356e705b91caa6d96b098bf3e7aa521ed9"
+      }
+    }
+  ]
 }

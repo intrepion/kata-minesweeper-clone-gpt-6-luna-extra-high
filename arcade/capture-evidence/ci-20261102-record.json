@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "workflowCommit": "aef000e576d880d60828d889e9bb4d36f7d87b8f",
+  "sourceCommit": "f0dd02dbc64383d4608415cb7de9250fdb671b9b",
+  "runId": "41378710888",
+  "url": "http://127.0.0.1:4175/",
+  "inputs": {
+    "index.html": "4a17b4eba5255c738fe874af651ac950b95dd0d66c3bc7e787cf6b1ca82f81ed",
+    "styles.css": "ba03ffb4f0f922b8022eeff08efd49ae92104dfe3349d5c48e9cf1768354c3ce",
+    "game.js": "668499ee5e46d930048a54adf78f3de3e6bfb4c1ec75c5950b5badd8afc10c90"
+  },
+  "browser": "153.0.8010.12",
+  "viewport": {
+    "width": 1280,
+    "height": 1000
+  },
+  "seed": 1989,
+  "screenshots": [
+    "field-01.png",
+    "field-02.png"
+  ]
+}
