@@ -20,3 +20,7 @@ A small, dependency-free hidden-mine logic game that runs in a browser. Open `in
 - Press **R** or use the face button to start a fresh field. The top three named, unassisted times and their local date/time (to the second) are saved for each preset difficulty; custom board dimensions keep separate tables.
 
 There is no build step and no server-side code.
+
+## Arcade metadata
+
+See [docs/arcade-metadata.md](docs/arcade-metadata.md) for the game-owned manifest and screenshot provenance.
